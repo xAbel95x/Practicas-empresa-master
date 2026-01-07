@@ -1,1 +1,3225 @@
 Código de prácticas
+---
+title: "Encuesta NPC"
+author: "Abel Pérez"
+date: "2025-10-13"
+output:
+  word_document:
+    toc: true
+    number_sections: true
+  pdf_document:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+ fig.width = 8,     # ancho grande
+  fig.height = 5,    # alto equilibrado
+  dpi = 300,         # alta resolución
+  fig.align = "center", # centrado en Word
+  out.width = "100%"    # ocupar todo el ancho de página
+)
+set.seed(123)
+```
+
+```{r include=FALSE}
+library(readxl) # Libreria excel
+library(tools) # Funciones para el manejo de nombres de archivos y extensiones
+library(dplyr) # Manipulación y transformación de datos
+library(ggplot2) # Creación de gráficos para el análisis exploratorio y descriptivo
+library(knitr) # Manipulación de cadenas de texto
+library(stringr) # Manipulación de cadenas de texto
+library(tidyr)  # Organización y reestructuración de datos
+```
+
+
+```{r include=FALSE}
+datos <- read_excel("ENCUESTA (NPC) 17-6-24 resultados.xlsx") # Cargar datos
+summary(datos) # Resumen
+str(datos) # Variables
+colnames(datos)[colSums(is.na(datos)) > 0] # Identificar las columnas que contienen al menos un valor NA
+sum(is.na(datos$`Tipo de UCI [Fila 3]`)) # Contar el número de valores NA en una variable concreta
+colSums(is.na(datos))[colSums(is.na(datos)) > 0] # Calcular el número total de valores NA por columna
+datos <- datos[,c(-28,-29)] # Eliminar columnas
+```
+
+# Graficas descriptivas
+## Comunidades autonomas de cada encuestado
+```{r echo=FALSE}
+datos$`Comunidad Autónoma en la que trabajas:` <- tolower(datos$`Comunidad Autónoma en la que trabajas:`) # Convertir a minúsculas
+datos$`Comunidad Autónoma en la que trabajas:` <- trimws(datos$`Comunidad Autónoma en la que trabajas:`) # Eliminar espacios en blanco al inicio y al final del texto
+datos$`Comunidad Autónoma en la que trabajas:` <- toTitleCase(datos$`Comunidad Autónoma en la que trabajas:`) # Primera letra en mayúscula
+# Unificar las distintas formas de escritura de las comunidades autónomas
+datos$`Comunidad Autónoma en la que trabajas:` <- ifelse(grepl("^arag", datos$`Comunidad Autónoma en la que trabajas:`, ignore.case = TRUE), "Aragón",
+                                                  ifelse(grepl("^anda", datos$`Comunidad Autónoma en la que trabajas:`, ignore.case = TRUE), "Andalucía",
+                                                  ifelse(grepl("^(barce|catal)", datos$`Comunidad Autónoma en la que trabajas:`, ignore.case = TRUE), "Cataluña",
+                                                  ifelse(grepl("^canta", datos$`Comunidad Autónoma en la que trabajas:`, ignore.case = TRUE), "Cantabria",
+                                                  ifelse(grepl("valencia", datos$`Comunidad Autónoma en la que trabajas:`, ignore.case = TRUE), "Comunidad Valenciana",
+                                                  ifelse(grepl("^mad", datos$`Comunidad Autónoma en la que trabajas:`, ignore.case = TRUE), "Madrid",
+                                                  ifelse(grepl("balear", datos$`Comunidad Autónoma en la que trabajas:`, ignore.case = TRUE), "Islas Baleares",
+                                                  ifelse(grepl("galici", datos$`Comunidad Autónoma en la que trabajas:`, ignore.case = TRUE), "Galicia",
+                                                  ifelse(grepl("(extre|badaj)", datos$`Comunidad Autónoma en la que trabajas:`, ignore.case = TRUE), "Extremadura",
+                                                  ifelse(grepl("rioja", datos$`Comunidad Autónoma en la que trabajas:`, ignore.case = TRUE), "La Rioja",
+                                                  ifelse(grepl("nava", datos$`Comunidad Autónoma en la que trabajas:`, ignore.case = TRUE), "Navarra",
+                                                  ifelse(grepl("(leon|león|valla)", datos$`Comunidad Autónoma en la que trabajas:`, ignore.case = TRUE), "Castilla y León",
+                                                  ifelse(grepl("mancha", datos$`Comunidad Autónoma en la que trabajas:`, ignore.case = TRUE), "Castilla La Mancha",
+                                                  ifelse(grepl("(biz|vasc)", datos$`Comunidad Autónoma en la que trabajas:`, ignore.case = TRUE), "País Vasco",
+                                                  datos$`Comunidad Autónoma en la que trabajas:`))))))))))))))
+conteo_autonom <- table(datos$`Comunidad Autónoma en la que trabajas:`) # Calcular el número de respuestas por comunidad autónoma
+porce_autonom <- round(prop.table(table(datos$`Comunidad Autónoma en la que trabajas:`))*100) # Calcular el porcentaje de respuestas por comunidad autónoma
+# Crear tabla
+totales_autonom <- data.frame(Comunidad = "Total",
+                              Conteo = sum(conteo_autonom),
+                              Porcentaje = sum(porce_autonom))
+tabla_autonom <- data.frame(Comunidad = names(conteo_autonom),
+                                          Conteo = as.vector(conteo_autonom),
+                                          Porcentaje = as.vector(porce_autonom))
+Tabla_Comunidades_Autónomas <- rbind(tabla_autonom, totales_autonom)
+kable(Tabla_Comunidades_Autónomas)
+# Representar gráficamente
+ggplot(tabla_autonom, aes(x=Comunidad, y=Conteo)) +
+  geom_bar(stat="identity", fill=4) +
+  geom_text(aes(label = Conteo), vjust = -1, colour = "black") +
+  ylim(c(0, 50)) +
+  labs(
+    y="Número de respuestas",
+    title="Comunidad Autónoma en la que trabajas"
+  ) +
+   theme_minimal() +
+  theme(axis.text.x = element_text(size=9, angle=90, hjust=1))
+```
+
+## Puesto de cada encuestado
+```{r echo=FALSE}
+datos$`Puesto que desempeñas en el hospital` <- tolower(datos$`Puesto que desempeñas en el hospital`) # Convertir a minúsculas
+datos$`Puesto que desempeñas en el hospital` <- trimws(datos$`Puesto que desempeñas en el hospital`) # Eliminar espacios en blanco al inicio y al final del texto
+datos$`Puesto que desempeñas en el hospital` <- toTitleCase(datos$`Puesto que desempeñas en el hospital`) # Primera letra en mayúscula
+conteo_puesto <- table(datos$`Puesto que desempeñas en el hospital`) # Calcular el número de respuestas por puesto
+porce_puesto <- round(prop.table(table(datos$`Puesto que desempeñas en el hospital`))*100) # Calcular el porcentaje de respuestas por puesto
+# Crear tabla final
+totales_puesto <- data.frame(Puesto = "Total",
+                              Conteo = sum(conteo_puesto),
+                              Porcentaje = sum(porce_puesto)) 
+tabla_puesto <- data.frame(Puesto = names(conteo_puesto),
+                            Conteo = as.vector(conteo_puesto),
+                            Porcentaje = as.vector(porce_puesto))
+Tabla_puestos <- rbind(tabla_puesto, totales_puesto)
+kable(Tabla_puestos)
+# Representar gráficamente
+ggplot(tabla_puesto, aes(x=Puesto, y=Conteo)) +
+  geom_bar(stat="identity", fill=4) +
+  geom_text(aes(label = Conteo), vjust = -1, colour = "black") +
+  ylim(c(0, 140)) +
+  labs(
+    y="Número de respuestas",
+    title="Puesto"
+  ) +
+   theme_minimal() +
+  theme(axis.text.x = element_text(size=9, angle=90, hjust=1))
+```
+
+## Rango camas
+
+```{r echo=FALSE}
+# Correcciones de valores mal introducidos o ambiguos
+datos <- datos %>%
+  mutate(`N.º de camas del hospital` = ifelse(`N.º de camas del hospital` == "600-800",
+                                              "700",
+                                              `N.º de camas del hospital`))
+datos <- datos %>%
+  mutate(`N.º de camas del hospital` = trimws(`N.º de camas del hospital`),
+         `N.º de camas del hospital` = tolower(`N.º de camas del hospital`),
+         `N.º de camas del hospital` = ifelse(
+           grepl("^>", `N.º de camas del hospital`),
+           as.numeric(gsub("[^0-9]", "", `N.º de camas del hospital`)) + 1,
+           as.numeric(gsub("[^0-9]", "", `N.º de camas del hospital`))
+         )
+  )
+datos <- datos %>%
+  mutate(`N.º de camas de críticos en todo el hospital` = ifelse(`N.º de camas de críticos en todo el hospital` == "Mas de 100",
+                                              "101",
+                                              `N.º de camas de críticos en todo el hospital`))
+datos$`N.º de camas de críticos en todo el hospital` <- tolower(datos$`N.º de camas de críticos en todo el hospital`)
+datos$`N.º de camas de críticos en todo el hospital` <- trimws(datos$`N.º de camas de críticos en todo el hospital`)
+datos$`N.º de camas de críticos en todo el hospital` <- gsub("[^0-9+-]", "", datos$`N.º de camas de críticos en todo el hospital`)
+datos <- datos %>%
+  mutate(`N.º de camas de críticos en todo el hospital` = ifelse(`N.º de camas de críticos en todo el hospital` == "121224",
+                                              "24",
+                                              `N.º de camas de críticos en todo el hospital`))
+datos <- datos %>%
+  mutate(`N.º de camas de críticos en todo el hospital` = ifelse(`N.º de camas de críticos en todo el hospital` == "21+6",
+                                                                 "27",
+                                                                 `N.º de camas de críticos en todo el hospital`))
+datos <- datos %>%
+  mutate(`N.º de camas de críticos en todo el hospital` = ifelse(`N.º de camas de críticos en todo el hospital` == "20+21",
+                                                                 "41",
+                                                                 `N.º de camas de críticos en todo el hospital`))
+datos$`N.º de camas de críticos en todo el hospital` <- as.numeric(datos$`N.º de camas de críticos en todo el hospital`)
+# Crear rangos de camas
+datos$Rango_camas <- cut(datos$`N.º de camas del hospital`,
+                         breaks = c(0, 250, 500, 1000, Inf),
+                         labels = c("100-250", "251-500", "501-1000", "Más de 1000"),
+                         right = TRUE)
+
+# Filtrar solo los hospitales con más camas que los críticos (opcional)
+tabla_camas <- subset(datos, `N.º de camas del hospital` > `N.º de camas de críticos en todo el hospital`)
+
+# Contar por rangos
+conteo_camas <- table(tabla_camas$Rango_camas)
+porce_camas <- round(prop.table(conteo_camas) * 100, 1)  # Porcentaje con 1 decimal
+
+# Crear tabla
+totales_camas <- data.frame(Rango_camas = "Total",
+                            Conteo = sum(conteo_camas),
+                            Porcentaje = sum(porce_camas),
+                            check.names = FALSE)
+
+tabla_camas <- data.frame(Rango_camas = names(conteo_camas),
+                          Conteo = as.vector(conteo_camas),
+                          Porcentaje = as.vector(porce_camas),
+                          check.names = FALSE)
+
+Tabla_camas <- rbind(tabla_camas, totales_camas)
+kable(Tabla_camas)
+# Representar gráficamente
+ggplot(tabla_camas, aes(x=Rango_camas, y=Conteo)) +
+  geom_bar(stat="identity", fill=4) +
+  geom_text(aes(label = Conteo), vjust = -1, colour = "black") +
+  ylim(c(0, 80)) +
+  labs(
+    x= "Rango de camas",
+    y="Número de respuestas",
+    title="Rango de camas"
+  )
+```
+
+## Camas UCI
+```{r echo=FALSE}
+#Agrupar por intervalos de camas
+datos$Rango_camas_UCI <- cut(datos$`N.º de camas de críticos en todo el hospital`,
+                         breaks = c(0, 20, 50, 100, Inf),
+                         labels = c("0-20", "21-50", "51-100", "Más de 100"),
+                         right = TRUE)
+conteo_camas <- table(datos$Rango_camas_UCI) # Calcular el número de respuestas en cada rango de camas UCI
+porce_camas <- round(prop.table(conteo_camas) * 100, 1)  # Porcentaje con 1 decimal
+# Crear tabla
+totales_camas <- data.frame(Rango_camas_UCI = "Total",
+                            Conteo = sum(conteo_camas),
+                            Porcentaje = sum(porce_camas),
+                            check.names = FALSE)
+
+tabla_camas <- data.frame(Rango_camas_UCI = names(conteo_camas),
+                          Conteo = as.vector(conteo_camas),
+                          Porcentaje = as.vector(porce_camas),
+                          check.names = FALSE)
+
+Tabla_camas <- rbind(tabla_camas, totales_camas)
+kable(Tabla_camas)
+# Representar gráficamente
+ggplot(tabla_camas, aes(x=Rango_camas_UCI, y=Conteo)) +
+  geom_bar(stat="identity", fill=4) +
+  geom_text(aes(label = Conteo), vjust = -1, colour = "black") +
+  ylim(c(0, 80)) +
+  labs(
+    x= "Rango camas UCI",
+    y="Número de respuestas",
+    title="Rango camas UCI"
+  )
+```
+
+## Tipo de UCI
+```{r echo=FALSE}
+datos <- datos %>%
+  mutate(`Tipo de UCI` = ifelse(`Tipo de UCI` == "TODAS", "Todos", `Tipo de UCI`))
+conteo_tipo_uci <- table(datos$`Tipo de UCI`) # Calcular el número de respuestas en cada tipo de UCI
+porce_tipo_uci <- round(prop.table(table(datos$`Tipo de UCI`))*100, 1) # Porcentaje con 1 decimal
+# Crear tabla final
+totales_tipo_uci <- data.frame(`Tipo de UCI` = "Total",
+                             Conteo = sum(conteo_tipo_uci),
+                             Porcentaje = sum(porce_tipo_uci),
+                             check.names = FALSE)
+tabla_tipo_uci <- data.frame(`Tipo de UCI` = names(conteo_tipo_uci),
+                           Conteo = as.vector(conteo_tipo_uci),
+                           Porcentaje = as.vector(porce_tipo_uci),
+                           check.names = FALSE)
+Tabla_tipo_uci <- rbind(tabla_tipo_uci, totales_tipo_uci)
+kable(Tabla_tipo_uci)
+```
+
+## Pregunta 1
+```{r echo=FALSE}
+conteo_preg1 <- table(datos$`Pregunta 1.  ¿Existe un protocolo de tratamiento nutricional específico en tu unidad que incluya NPC?`) # Conteo de respuestas
+porce_preg1 <- round(prop.table(table(datos$`Pregunta 1.  ¿Existe un protocolo de tratamiento nutricional específico en tu unidad que incluya NPC?`))*100, 1) # Porcentaje con 1 decimal
+# Crear tabla
+totales_preg1 <- data.frame(`Pregunta 1.  ¿Existe un protocolo de tratamiento nutricional específico en tu unidad que incluya NPC?` = "Total",
+                               Conteo = sum(conteo_preg1),
+                               Porcentaje = sum(porce_preg1),
+                               check.names = FALSE)
+tabla_preg1 <- data.frame(`Pregunta 1.  ¿Existe un protocolo de tratamiento nutricional específico en tu unidad que incluya NPC?` = names(conteo_preg1),
+                             Conteo = as.vector(conteo_preg1),
+                             Porcentaje = as.vector(porce_preg1),
+                             check.names = FALSE)
+Tabla_preg1 <- rbind(tabla_preg1, totales_preg1)
+kable(Tabla_preg1)
+# Representar gráficamente
+ggplot(tabla_preg1, aes(x=`Pregunta 1.  ¿Existe un protocolo de tratamiento nutricional específico en tu unidad que incluya NPC?`, y=Conteo)) +
+  geom_bar(stat="identity", fill=4) +
+  geom_text(aes(label = Conteo), vjust = -1, colour = "black") +
+  ylim(c(0, 85)) +
+  labs(
+    x= "Respuestas",
+    y="Número de respuestas",
+    title="¿Existe un protocolo de tratamiento nutricional específico en tu unidad que incluya NPC?"
+  ) +
+  theme_minimal() +
+  theme(plot.title = element_text(size=10))
+```
+
+### Pregunta 1 desglosar entre SI y NO
+```{r echo=FALSE}
+# Desglosar respuestas en binario
+datos_preg1_separado <- datos %>%
+  mutate(
+    Si = ifelse(str_detect(`Pregunta 1.  ¿Existe un protocolo de tratamiento nutricional específico en tu unidad que incluya NPC?`,"^Sí$"), 1, 0),
+    No = ifelse(str_detect(`Pregunta 1.  ¿Existe un protocolo de tratamiento nutricional específico en tu unidad que incluya NPC?`,"No"), 1, 0),
+    `Si, pero` = ifelse(str_detect(`Pregunta 1.  ¿Existe un protocolo de tratamiento nutricional específico en tu unidad que incluya NPC?`,"pero"), 1, 0),
+    `No total` = ifelse(No == 1 | `Si, pero` == 1, 1, 0))
+# Crear tabla desglose
+tabla_preg1_desglosado <- datos_preg1_separado %>%
+  summarise(
+    Si = sum(Si, na.rm = TRUE),
+    No = sum(`No total`, na.rm = TRUE)
+  )
+Tabla_preg1_desglosado <- tabla_preg1_desglosado %>%
+  pivot_longer(everything(), names_to = "Protocolo", values_to = "Total") %>%
+  mutate(Porcentaje = round(Total / 179 * 100, 1))
+kable(Tabla_preg1_desglosado)
+```
+
+```{r echo=FALSE}
+# Representar gráficamente
+ggplot(Tabla_preg1_desglosado, aes(x = reorder(Protocolo, -Total), y = Total, fill = Protocolo)) +
+  geom_col() +
+  ylim(c(0, 120)) +
+  geom_text(aes(label = paste0(Total, " (", Porcentaje, "%)")), vjust = -0.5, size = 3) +
+  labs(
+    title = "Pregunta 1 Si y No",
+    x = "Protocolo",
+    y = "Total (y % sobre 179 respuestas)"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(angle = 0, hjust = 0.5))
+```
+
+## Pregunta 2
+```{r echo=FALSE}
+conteo_preg2 <- table(datos$`Pregunta 2.  ¿Conoces el concepto de NPC y sus indicaciones?`) # Conteo de respuestas
+porce_preg2 <- round(prop.table(table(datos$`Pregunta 2.  ¿Conoces el concepto de NPC y sus indicaciones?`))*100, 1) # Porcentaje con 1 decimal
+# Crear tabla
+totales_preg2 <- data.frame(`Pregunta 2.  ¿Conoces el concepto de NPC y sus indicaciones?` = "Total",
+                            Conteo = sum(conteo_preg2),
+                            Porcentaje = sum(porce_preg2),
+                            check.names = FALSE)
+tabla_preg2 <- data.frame(`Pregunta 2.  ¿Conoces el concepto de NPC y sus indicaciones?` = names(conteo_preg2),
+                          Conteo = as.vector(conteo_preg2),
+                          Porcentaje = as.vector(porce_preg2),
+                          check.names = FALSE)
+Tabla_preg2 <- rbind(tabla_preg2, totales_preg2)
+kable(Tabla_preg2)
+# Representar gráficamente
+ggplot(tabla_preg2, aes(x=`Pregunta 2.  ¿Conoces el concepto de NPC y sus indicaciones?`, y=Conteo)) +
+  geom_bar(stat="identity", fill=4) +
+  geom_text(aes(label = Conteo), vjust = -1, colour = "black") +
+  ylim(c(0, 165)) +
+  labs(
+    x= "Respuestas",
+    y="Número de respuestas",
+    title="¿Conoces el concepto de NPC y sus indicaciones?"
+  ) +
+  theme_minimal() +
+  theme(plot.title = element_text(size=10))
+```
+
+## Pregunta 3
+```{r echo=FALSE}
+# Correccion de ambiguedades
+datos$`Pregunta 3.  ¿Quién es el principal responsable de prescribir/ indicar la NP en tu unidad? [Respuesta multiopción]` [datos$`Pregunta 3.  ¿Quién es el principal responsable de prescribir/ indicar la NP en tu unidad? [Respuesta multiopción]` == "Intensivista., JUNTO CON FARMACIA"] <- "Intensivista., Farmacéutico."
+conteo_preg3 <- table(datos$`Pregunta 3.  ¿Quién es el principal responsable de prescribir/ indicar la NP en tu unidad? [Respuesta multiopción]`) # Conteo de respuestas
+porce_preg3 <- round(prop.table(table(datos$`Pregunta 3.  ¿Quién es el principal responsable de prescribir/ indicar la NP en tu unidad? [Respuesta multiopción]`))*100, 1) # Porcentaje con 1 decimal
+# Crear tabla
+totales_preg3 <- data.frame(`Pregunta 3.  ¿Quién es el principal responsable de prescribir/ indicar la NP en tu unidad? [Respuesta multiopción]` = "Total",
+                            Conteo = sum(conteo_preg3),
+                            Porcentaje = sum(porce_preg3),
+                            check.names = FALSE)
+tabla_preg3 <- data.frame(`Pregunta 3.  ¿Quién es el principal responsable de prescribir/ indicar la NP en tu unidad? [Respuesta multiopción]` = names(conteo_preg3),
+                          Conteo = as.vector(conteo_preg3),
+                          Porcentaje = as.vector(porce_preg3),
+                          check.names = FALSE)
+Tabla_preg3 <- rbind(tabla_preg3, totales_preg3)
+kable(Tabla_preg3)
+```
+
+### Pregunta 3 desglosada
+```{r include=FALSE}
+col_p3 <- "Pregunta 3.  ¿Quién es el principal responsable de prescribir/ indicar la NP en tu unidad? [Respuesta multiopción]"
+datos_preg3 <- datos %>%
+  # Convertimos a texto y limpiamos
+  mutate(P3 = str_squish(str_replace_all(!!sym(col_p3), "\\.", ""))) %>% 
+  # Separamos por coma
+  mutate(P3 = strsplit(P3, ",")) %>%
+  unnest(P3) %>%
+  mutate(P3 = str_trim(P3))
+datos_bin_preg3 <- datos_preg3 %>%
+  mutate(valor = 1) %>%
+  pivot_wider(names_from = P3, values_from = valor, values_fill = 0)
+datos_bin_preg3$Farmacéutico <- pmax(datos_bin_preg3$Farmacéutico, datos_bin_preg3$`EN UCI farmacia`)
+datos_bin_preg3 <- subset(datos_bin_preg3, select = -`EN UCI farmacia`)
+names(datos_bin_preg3)[names(datos_bin_preg3) == 'CIRUJANO'] <- 'Cirujano'
+datos_bin_preg3$Cirujano <- pmax(datos_bin_preg3$Cirujano, datos_bin_preg3$CIRUGIA)
+datos_bin_preg3 <- subset(datos_bin_preg3, select = -CIRUGIA)
+datos_bin_preg3$Endocrinólogo <- pmax(datos_bin_preg3$Endocrinólogo, datos_bin_preg3$Endocrino)
+datos_bin_preg3 <- subset(datos_bin_preg3, select = -Endocrino)
+names(datos_bin_preg3)[names(datos_bin_preg3) == 'PEDIA'] <- 'Pediatría'
+names(datos_bin_preg3)[names(datos_bin_preg3) == 'en Coronaria'] <- 'Cardiología'
+names(datos_bin_preg3)[names(datos_bin_preg3) == 'MI'] <- 'Medicina interna'
+names(datos_bin_preg3)[names(datos_bin_preg3) == 'REA'] <- 'Reanimación'
+datos <- datos_bin_preg3
+```
+
+```{r echo=FALSE}
+# Crear tabla desglose
+tabla_preg3_separado <- datos %>%
+  summarise(
+    Intensivista = sum(Intensivista, na.rm = TRUE),
+    Farmacéutico = sum(Farmacéutico, na.rm = TRUE),
+    Anestesista = sum(Anestesista, na.rm = TRUE),
+    Cirujano = sum(Cirujano, na.rm = TRUE),
+    Endocrinólogo = sum(Endocrinólogo, na.rm = TRUE),
+    `Medicina interna` = sum(`Medicina interna`, na.rm = TRUE),
+    Pediatría = sum(Pediatría, na.rm = TRUE),
+    Cardiología = sum(Cardiología, na.rm = TRUE),
+    Reanimación = sum(Reanimación, na.rm = TRUE),
+    Nutricionista = sum(Nutricionista, na.rm = TRUE)
+  )
+Tabla_preg3_separado <- tabla_preg3_separado %>%
+  pivot_longer(everything(), names_to = "Profesión", values_to = "Total") %>%
+  mutate(Porcentaje = round(Total / 179 * 100, 1))
+kable(Tabla_preg3_separado)
+# Representar gráficamente
+ggplot(Tabla_preg3_separado, aes(x = reorder(Profesión, -Total), y = Total, fill = Profesión)) +
+  geom_col() +
+  ylim(c(0, 170)) +
+  geom_text(aes(label = paste0(Total, " (", Porcentaje, "%)")), vjust = -0.5, size = 3) +
+  labs(
+    title = "Pregunta 3 desglosada",
+    x = "Profesión",
+    y = "Total (y % sobre 179 respuestas)"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+#### Grafico por cada comunidad
+
+```{r include=FALSE}
+# Tabla separada por comunidad y puesto
+tabla_puesto_separado <- datos %>%
+                          group_by(`Comunidad Autónoma en la que trabajas:`) %>%
+                            summarise(
+                            Intensivista = sum(Intensivista, na.rm = TRUE),
+                            Farmacéutico = sum(Farmacéutico, na.rm = TRUE),
+                            Anestesista = sum(Anestesista, na.rm = TRUE),
+                            Cirujano = sum(Cirujano, na.rm = TRUE),
+                            Endocrinólogo = sum(Endocrinólogo, na.rm = TRUE),
+                            `Medicina interna` = sum(`Medicina interna`, na.rm = TRUE),
+                            Pediatría = sum(Pediatría, na.rm = TRUE),
+                            Cardiología = sum(Cardiología, na.rm = TRUE),
+                            Reanimación = sum(Reanimación, na.rm = TRUE),
+                            Nutricionista = sum(Nutricionista, na.rm = TRUE))
+Tabla_puesto_separado <- tabla_puesto_separado %>%
+  pivot_longer(cols = -`Comunidad Autónoma en la que trabajas:`, names_to = "Especialidad", values_to = "Cantidad")
+```
+
+```{r echo=FALSE}
+# Representar gráficamente
+ggplot(data = Tabla_puesto_separado,
+       aes(x = `Comunidad Autónoma en la que trabajas:`,
+           y = Cantidad,
+           fill = Especialidad)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_viridis_d(option = "turbo") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Comunidad Autónoma",
+       y = "Cantidad",
+       fill = "Especialidad")
+```
+
+## Pregunta 4
+```{r echo=FALSE}
+conteo_preg4 <- table(datos$`Pregunta 4.  ¿Utilizas la NPC cuando no se consigue cubrir requerimientos con NE?`) # Conteo de respuestas
+porce_preg4 <- round(prop.table(table(datos$`Pregunta 4.  ¿Utilizas la NPC cuando no se consigue cubrir requerimientos con NE?`))*100, 1) # Porcentaje con 1 decimal
+# Crear tabla
+totales_preg4 <- data.frame(`Pregunta 4.  ¿Utilizas la NPC cuando no se consigue cubrir requerimientos con NE?` = "Total",
+                            Conteo = sum(conteo_preg4),
+                            Porcentaje = sum(porce_preg4),
+                            check.names = FALSE)
+tabla_preg4 <- data.frame(`Pregunta 4.  ¿Utilizas la NPC cuando no se consigue cubrir requerimientos con NE?` = names(conteo_preg4),
+                          Conteo = as.vector(conteo_preg4),
+                          Porcentaje = as.vector(porce_preg4),
+                          check.names = FALSE)
+Tabla_preg4 <- rbind(tabla_preg4, totales_preg4)
+kable(Tabla_preg4)
+
+tabla_preg4$`Pregunta 4.  ¿Utilizas la NPC cuando no se consigue cubrir requerimientos con NE?` <-
+  str_wrap(tabla_preg4$`Pregunta 4.  ¿Utilizas la NPC cuando no se consigue cubrir requerimientos con NE?`, width = 25)
+# Representar gráficamente
+ggplot(tabla_preg4, aes(
+  x = `Pregunta 4.  ¿Utilizas la NPC cuando no se consigue cubrir requerimientos con NE?`,
+  y = Conteo
+)) +
+  geom_bar(stat = "identity", fill = 4) +
+  geom_text(aes(label = Conteo), vjust = -0.5, colour = "black") +
+  ylim(c(0, 100)) +
+  labs(
+    x = "Respuestas",
+    y = "Número de respuestas",
+    title = "¿Utilizas la NPC cuando no se consigue cubrir requerimientos con NE?"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 10),
+    axis.text.x = element_text(size = 7, angle = 0, hjust = 0.5)
+  )
+```
+
+## Pregunta 5
+```{r echo=FALSE}
+# Correccion de datos mal introducidos o ambiguos
+datos$`Pregunta 5. En tu opinión, ¿Qué razones sustentan el inicio de una NPC?\r\n[Respuesta multiopción]` <- ifelse(grepl("requerim|NO CUMPLIR NECESIDADES CON ORAL/ENTERAL|insuficiente|incompleta|Cebar", datos$`Pregunta 5. En tu opinión, ¿Qué razones sustentan el inicio de una NPC?\r\n[Respuesta multiopción]`, ignore.case = TRUE), "No alcanzar los requerimientos nutricionales",
+  ifelse(grepl("Imposible|tracto intestinal", datos$`Pregunta 5. En tu opinión, ¿Qué razones sustentan el inicio de una NPC?\r\n[Respuesta multiopción]`, ignore.case = TRUE), "Imposibilidad via enteral",
+  ifelse(grepl("Contraindicacion", datos$`Pregunta 5. En tu opinión, ¿Qué razones sustentan el inicio de una NPC?\r\n[Respuesta multiopción]`, ignore.case = TRUE), "Contraindicación NE",
+  ifelse(grepl("Hipertensión intraabdominal", datos$`Pregunta 5. En tu opinión, ¿Qué razones sustentan el inicio de una NPC?\r\n[Respuesta multiopción]`, ignore.case = TRUE), "Hipertensión intraabdominal",
+  ifelse(grepl("Ninguna", datos$`Pregunta 5. En tu opinión, ¿Qué razones sustentan el inicio de una NPC?\r\n[Respuesta multiopción]`, ignore.case = TRUE), "Ninguna",
+  datos$`Pregunta 5. En tu opinión, ¿Qué razones sustentan el inicio de una NPC?\r\n[Respuesta multiopción]`)))))
+conteo_preg5 <- table(datos[["Pregunta 5. En tu opinión, ¿Qué razones sustentan el inicio de una NPC?\r\n[Respuesta multiopción]"]]) # Conteo de respuestas
+porce_preg5 <- round(prop.table(conteo_preg5)*100, 1) # Porcentaje con 1 decimal
+# Crear tabla
+tabla_preg5 <- data.frame(
+  Respuesta = names(conteo_preg5),
+  Conteo = as.vector(conteo_preg5),
+  Porcentaje = as.vector(porce_preg5)
+)
+
+totales_preg5 <- data.frame(
+  Respuesta = "Total",
+  Conteo = sum(tabla_preg5$Conteo),
+  Porcentaje = sum(tabla_preg5$Porcentaje)
+)
+
+Tabla_preg5 <- rbind(tabla_preg5, totales_preg5)
+kable(Tabla_preg5)
+
+tabla_preg5$Respuesta <- str_wrap(tabla_preg5$Respuesta, width = 25)
+# Representar gráficamente
+ggplot(tabla_preg5, aes(x = Respuesta, y = Conteo)) +
+  geom_bar(stat = "identity", fill = 4) +
+  geom_text(aes(label = Conteo), vjust = -0.5, colour = "black") +
+  ylim(c(0, 75)) +
+  labs(
+    x = "Respuestas",
+    y = "Número de respuestas",
+    title = "¿Qué razones sustentan el inicio de una NPC? [Respuesta multiopción]"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 10),
+    axis.text.x = element_text(size = 7, angle = 90, vjust = 0.5, hjust = 0.5)
+  )
+```
+
+### Pregunta 5 separado en cada comunidad
+```{r include=FALSE}
+# Desglose en binario
+datos <- datos %>%
+  mutate(
+    Intolerancia_de_NE = ifelse(str_detect(`Pregunta 5. En tu opinión, ¿Qué razones sustentan el inicio de una NPC?\r\n[Respuesta multiopción]`,"a. Intolerancia de NE."), 1, 0),
+    Riesgo_complicaciones = ifelse(str_detect(`Pregunta 5. En tu opinión, ¿Qué razones sustentan el inicio de una NPC?\r\n[Respuesta multiopción]`,"b. Riesgo de complicaciones al incrementar el volumen de NE."), 1, 0),
+    Inestabilidad_hemodinámica = ifelse(str_detect(`Pregunta 5. En tu opinión, ¿Qué razones sustentan el inicio de una NPC?\r\n[Respuesta multiopción]`,"c. Inestabilidad hemodinámica."), 1, 0),
+    Contraindicación_NE = ifelse(str_detect(`Pregunta 5. En tu opinión, ¿Qué razones sustentan el inicio de una NPC?\r\n[Respuesta multiopción]`,"Contraindicación NE"), 1, 0),
+    Hipertensión_intraabdominal = ifelse(str_detect(`Pregunta 5. En tu opinión, ¿Qué razones sustentan el inicio de una NPC?\r\n[Respuesta multiopción]`,"Hipertensión intraabdominal"), 1, 0),
+    Imposibilidad_via_enteral = ifelse(str_detect(`Pregunta 5. En tu opinión, ¿Qué razones sustentan el inicio de una NPC?\r\n[Respuesta multiopción]`,"Imposibilidad via enteral"), 1, 0),
+    Ninguna = ifelse(str_detect(`Pregunta 5. En tu opinión, ¿Qué razones sustentan el inicio de una NPC?\r\n[Respuesta multiopción]`,"Ninguna"), 1, 0),
+    No_alcanzar_requerimientos = ifelse(str_detect(`Pregunta 5. En tu opinión, ¿Qué razones sustentan el inicio de una NPC?\r\n[Respuesta multiopción]`,"No alcanzar los requerimientos nutricionales"), 1, 0))
+# Crear tabla separada
+tabla_preg5_separado <- datos %>%
+                          group_by(`Comunidad Autónoma en la que trabajas:`) %>%
+                            summarise(
+                            `Intolerancia de NE` = sum(Intolerancia_de_NE, na.rm = TRUE),
+                            `Riesgo complicaciones` = sum(Riesgo_complicaciones, na.rm = TRUE),
+                            `Inestabilidad hemodinámica` = sum(Inestabilidad_hemodinámica, na.rm = TRUE),
+                            `Contraindicación NE` = sum(Contraindicación_NE, na.rm = TRUE),
+                            `Hipertensión intraabdominal` = sum(Hipertensión_intraabdominal, na.rm = TRUE),
+                            `Imposibilidad via enteral` = sum(Imposibilidad_via_enteral, na.rm = TRUE),
+                            `Ninguna` = sum(Ninguna, na.rm = TRUE),
+                            `No alcanzar requerimientos` = sum(No_alcanzar_requerimientos, na.rm = TRUE))
+Tabla_preg5_separado <- tabla_preg5_separado %>%
+  pivot_longer(cols = -`Comunidad Autónoma en la que trabajas:`, names_to = "Razones_inicio_NPC", values_to = "Cantidad")
+```
+
+```{r echo=FALSE}
+# Representar gráficamente
+ggplot(data = Tabla_preg5_separado,
+       aes(x = `Comunidad Autónoma en la que trabajas:`,
+           y = Cantidad,
+           fill = Razones_inicio_NPC)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_viridis_d(option = "turbo") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Comunidad Autónoma",
+       y = "Cantidad",
+       fill = "Razones_inicio_NPC")
+```
+
+### Pregunta 5 desglosada
+```{r echo=FALSE}
+# Crear tabla desglosada
+tabla_preg5_desglosada <- datos %>%
+                            summarise(
+                            `Intolerancia de NE` = sum(Intolerancia_de_NE, na.rm = TRUE),
+                            `Riesgo complicaciones` = sum(Riesgo_complicaciones, na.rm = TRUE),
+                            `Inestabilidad hemodinámica` = sum(Inestabilidad_hemodinámica, na.rm = TRUE),
+                            `Contraindicación NE` = sum(Contraindicación_NE, na.rm = TRUE),
+                            `Hipertensión intraabdominal` = sum(Hipertensión_intraabdominal, na.rm = TRUE),
+                            `Imposibilidad via enteral` = sum(Imposibilidad_via_enteral, na.rm = TRUE),
+                            `Ninguna` = sum(Ninguna, na.rm = TRUE),
+                            `No alcanzar requerimientos` = sum(No_alcanzar_requerimientos, na.rm = TRUE))
+Tabla_preg5_desglosada <- tabla_preg5_desglosada %>%
+  pivot_longer(everything(), names_to = "Razon inicio NPC", values_to = "Total") %>%
+  mutate(Porcentaje = round(Total / 179 * 100, 1))
+# Representar gráficamente
+ggplot(Tabla_preg5_desglosada, aes(x = reorder(`Razon inicio NPC`, -Total), y = Total, fill = `Razon inicio NPC`)) +
+  geom_col() +
+  ylim(c(0, 150)) +
+  geom_text(aes(label = paste0(Total, " (", Porcentaje, "%)")), vjust = -0.5, size = 3) +
+  labs(
+    title = "Pregunta 5 desglosada",
+    x = "Razón del inicio NPC",
+    y = "Total (y % sobre 179 respuestas)"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## Pregunta 6
+```{r echo=FALSE}
+conteo_preg6 <- table(datos$`Pregunta 6. ¿Utilizas procinéticos antes de iniciar la NPC para mejorar la tolerancia a la nutrición enteral?`) # Conteo de respuestas
+porce_preg6 <- round(prop.table(table(datos$`Pregunta 6. ¿Utilizas procinéticos antes de iniciar la NPC para mejorar la tolerancia a la nutrición enteral?`))*100, 1) # Porcentaje con 1 decimal
+# Crear tabla
+totales_preg6 <- data.frame(`Pregunta 6. ¿Utilizas procinéticos antes de iniciar la NPC para mejorar la tolerancia a la nutrición enteral?` = "Total",
+                            Conteo = sum(conteo_preg6),
+                            Porcentaje = sum(porce_preg6),
+                            check.names = FALSE)
+tabla_preg6 <- data.frame(`Pregunta 6. ¿Utilizas procinéticos antes de iniciar la NPC para mejorar la tolerancia a la nutrición enteral?` = names(conteo_preg6),
+                          Conteo = as.vector(conteo_preg6),
+                          Porcentaje = as.vector(porce_preg6),
+                          check.names = FALSE)
+Tabla_preg6 <- rbind(tabla_preg6, totales_preg6)
+kable(Tabla_preg6)
+# Representar gráficamente
+ggplot(tabla_preg6, aes(x=`Pregunta 6. ¿Utilizas procinéticos antes de iniciar la NPC para mejorar la tolerancia a la nutrición enteral?`, y=Conteo)) +
+  geom_bar(stat="identity", fill=4) +
+  geom_text(aes(label = Conteo), vjust = -1, colour = "black") +
+  ylim(c(0, 130)) +
+  labs(
+    x= "Respuestas",
+    y="Número de respuestas",
+    title="¿Utilizas procinéticos antes de iniciar la NPC para mejorar la tolerancia a la nutrición enteral?"
+  ) +
+  theme_minimal() +
+  theme(plot.title = element_text(size=10)) +
+  theme(axis.text.x = element_text(size=7, angle=0, hjust=0.5))
+```
+
+## Pregunta 7
+```{r echo=FALSE}
+conteo_preg7 <- table(datos$`Pregunta 7. En caso de continuar con intolerancia a la nutrición enteral a pesar de los procinéticos, ¿se considera el acceso postpilórico antes de la NPC?`) # Conteo de respuestas
+porce_preg7 <- round(prop.table(table(datos$`Pregunta 7. En caso de continuar con intolerancia a la nutrición enteral a pesar de los procinéticos, ¿se considera el acceso postpilórico antes de la NPC?`))*100, 1) # Porcentaje con 1 decimal
+# Crear tabla
+totales_preg7 <- data.frame(`Pregunta 7. En caso de continuar con intolerancia a la nutrición enteral a pesar de los procinéticos, ¿se considera el acceso postpilórico antes de la NPC?` = "Total",
+                            Conteo = sum(conteo_preg7),
+                            Porcentaje = sum(porce_preg7),
+                            check.names = FALSE)
+tabla_preg7 <- data.frame(`Pregunta 7. En caso de continuar con intolerancia a la nutrición enteral a pesar de los procinéticos, ¿se considera el acceso postpilórico antes de la NPC?` = names(conteo_preg7),
+                          Conteo = as.vector(conteo_preg7),
+                          Porcentaje = as.vector(porce_preg7),
+                          check.names = FALSE)
+Tabla_preg7 <- rbind(tabla_preg7, totales_preg7)
+kable(Tabla_preg7)
+# Representar gráficamente
+ggplot(tabla_preg7, aes(x=`Pregunta 7. En caso de continuar con intolerancia a la nutrición enteral a pesar de los procinéticos, ¿se considera el acceso postpilórico antes de la NPC?`, y=Conteo)) +
+  geom_bar(stat="identity", fill=4) +
+  geom_text(aes(label = Conteo), vjust = -1, colour = "black") +
+  ylim(c(0, 100)) +
+  labs(
+    x= "Respuestas",
+    y="Número de respuestas",
+    title="En caso de continuar con intolerancia a la nutrición enteral a pesar de los procinéticos, ¿se considera el acceso postpilórico antes de la NPC?"
+  ) +
+  theme_minimal() +
+  theme(plot.title = element_text(size=7)) +
+  theme(axis.text.x = element_text(size=9, angle=0, hjust=0.5))
+```
+
+## Pregunta 8
+```{r echo=FALSE}
+conteo_preg8 <- table(datos$`Pregunta 8. ¿Cuál es tu principal objetivo al prescribir una NPC en vuestra UCI? [Respuesta multiopción]`) # Conteo de respuestas
+porce_preg8 <- round(prop.table(table(datos$`Pregunta 8. ¿Cuál es tu principal objetivo al prescribir una NPC en vuestra UCI? [Respuesta multiopción]`))*100, 1) # Porcentaje con 1 decimal
+# Crear tabla
+totales_preg8 <- data.frame(`Pregunta 8. ¿Cuál es tu principal objetivo al prescribir una NPC en vuestra UCI? [Respuesta multiopción]` = "Total",
+                            Conteo = sum(conteo_preg8),
+                            Porcentaje = sum(porce_preg8),
+                            check.names = FALSE)
+tabla_preg8 <- data.frame(`Pregunta 8. ¿Cuál es tu principal objetivo al prescribir una NPC en vuestra UCI? [Respuesta multiopción]` = names(conteo_preg8),
+                          Conteo = as.vector(conteo_preg8),
+                          Porcentaje = as.vector(porce_preg8),
+                          check.names = FALSE)
+Tabla_preg8 <- rbind(tabla_preg8, totales_preg8)
+kable(Tabla_preg8)
+# Representar gráficamente
+ggplot(tabla_preg8, aes(x=str_wrap(`Pregunta 8. ¿Cuál es tu principal objetivo al prescribir una NPC en vuestra UCI? [Respuesta multiopción]`, width=40), y=Conteo)) +
+  geom_bar(stat="identity", fill=4) +
+  geom_text(aes(label = Conteo), vjust = -1, colour = "black") +
+  ylim(c(0, 155)) +
+  labs(
+    x= "Respuestas",
+    y="Número de respuestas",
+    title="¿Cuál es tu principal objetivo al prescribir una NPC en vuestra UCI?"
+  ) +
+  theme_minimal() +
+  theme(plot.title = element_text(size=10)) +
+  theme(axis.text.x = element_text(size=8, angle=90, hjust=0))
+```
+
+### Pregunta 8 separado en cada comunidad
+```{r include=FALSE}
+# Desglose en binario 
+datos <- datos %>%
+  mutate(
+    Cubrir_Necesidad = ifelse(str_detect(`Pregunta 8. ¿Cuál es tu principal objetivo al prescribir una NPC en vuestra UCI? [Respuesta multiopción]`,
+                                   "Cubrir las necesidades energético-proteicas y evitar la desnutrición"), 1, 0),
+    Incrementar_Proteico = ifelse(str_detect(`Pregunta 8. ¿Cuál es tu principal objetivo al prescribir una NPC en vuestra UCI? [Respuesta multiopción]`,
+                                             "Incrementar el aporte proteico."), 1, 0),
+    Incrementar_Calorico = ifelse(str_detect(`Pregunta 8. ¿Cuál es tu principal objetivo al prescribir una NPC en vuestra UCI? [Respuesta multiopción]`,
+                                             "Incrementar el aporte calórico."), 1, 0),
+    No_Utilizo_NPC = ifelse(str_detect(`Pregunta 8. ¿Cuál es tu principal objetivo al prescribir una NPC en vuestra UCI? [Respuesta multiopción]`,
+                                       "No utilizo NPC"), 1, 0)
+  )
+# Crear tabla separado
+tabla_preg8_separado <- datos %>%
+                          group_by(`Comunidad Autónoma en la que trabajas:`) %>%
+                            summarise(
+                            `Cubrir Necesidad` = sum(Cubrir_Necesidad, na.rm = TRUE),
+                            `Incrementar Proteico` = sum(Incrementar_Proteico, na.rm = TRUE),
+                            `Incrementar Calorico` = sum(Incrementar_Calorico, na.rm = TRUE),
+                            `No Utilizo NPC` = sum(No_Utilizo_NPC, na.rm = TRUE))
+Tabla_preg8_separado <- tabla_preg8_separado %>%
+  pivot_longer(cols = -`Comunidad Autónoma en la que trabajas:`, names_to = "Principal obj NPC", values_to = "Cantidad")
+
+```
+
+```{r echo=FALSE}
+# Representar gráficamente
+ggplot(data = Tabla_preg8_separado,
+       aes(x = `Comunidad Autónoma en la que trabajas:`,
+           y = Cantidad,
+           fill = `Principal obj NPC`)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_viridis_d(option = "turbo") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Comunidad Autónoma",
+       y = "Cantidad",
+       fill = "Principal objetivo NPC")
+```
+
+### Pregunta 8 desglosada
+```{r echo=FALSE}
+# Crear tabla desglose
+tabla_preg8_desglosada <- datos %>%
+                            summarise(
+                            `Cubrir Necesidad` = sum(Cubrir_Necesidad, na.rm = TRUE),
+                            `Incrementar Proteico` = sum(Incrementar_Proteico, na.rm = TRUE),
+                            `Incrementar Calorico` = sum(Incrementar_Calorico, na.rm = TRUE),
+                            `No Utilizo NPC` = sum(No_Utilizo_NPC, na.rm = TRUE))
+Tabla_preg8_desglosada <- tabla_preg8_desglosada %>%
+  pivot_longer(everything(), names_to = "Principal objetivo NPC", values_to = "Total") %>%
+  mutate(Porcentaje = round(Total / 179 * 100, 1))
+# Representar gráficamente
+ggplot(Tabla_preg8_desglosada, aes(x = reorder(`Principal objetivo NPC`, -Total), y = Total, fill = `Principal objetivo NPC`)) +
+  geom_col() +
+  ylim(c(0, 180)) +
+  geom_text(aes(label = paste0(Total, " (", Porcentaje, "%)")), vjust = -0.5, size = 3) +
+  labs(
+    title = "Pregunta 8 desglosada",
+    x = "Principal objetivo NPC",
+    y = "Total (y % sobre 179 respuestas)"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## Pregunta 9
+```{r echo=FALSE}
+conteo_preg9 <- table(datos$`Pregunta 9. ¿Qué tipo de preparados de NPC empleáis con mayor frecuencia? [Respuesta multiopción] :`) # Conteo de respuestas
+porce_preg9 <- round(prop.table(table(datos$`Pregunta 9. ¿Qué tipo de preparados de NPC empleáis con mayor frecuencia? [Respuesta multiopción] :`))*100, 1) # Porcentaje con 1 decimal
+# Crear tabla
+totales_preg9 <- data.frame(`Pregunta 9. ¿Qué tipo de preparados de NPC empleáis con mayor frecuencia? [Respuesta multiopción] :` = "Total",
+                            Conteo = sum(conteo_preg9),
+                            Porcentaje = sum(porce_preg9),
+                            check.names = FALSE)
+tabla_preg9 <- data.frame(`Pregunta 9. ¿Qué tipo de preparados de NPC empleáis con mayor frecuencia? [Respuesta multiopción] :` = names(conteo_preg9),
+                          Conteo = as.vector(conteo_preg9),
+                          Porcentaje = as.vector(porce_preg9),
+                          check.names = FALSE)
+Tabla_preg9 <- rbind(tabla_preg9, totales_preg9)
+kable(Tabla_preg9)
+# Representar gráficamente
+ggplot(tabla_preg9, aes(x=str_wrap(`Pregunta 9. ¿Qué tipo de preparados de NPC empleáis con mayor frecuencia? [Respuesta multiopción] :`, width=40), y=Conteo)) +
+  geom_bar(stat="identity", fill=4) +
+  geom_text(aes(label = Conteo), vjust = -1, colour = "black") +
+  ylim(c(0, 85)) +
+  labs(
+    x= "Respuestas",
+    y="Número de respuestas",
+    title="¿Qué tipo de preparados de NPC empleáis con mayor frecuencia?"
+  ) +
+  theme_minimal() +
+  theme(plot.title = element_text(size=10)) +
+  theme(axis.text.x = element_text(size=8, angle=90, hjust=0))
+```
+
+### Pregunta 9 separado en cada comunidad
+```{r include=FALSE}
+# Desglose en binario
+datos <- datos %>%
+  mutate(
+    Estandarizada = ifelse(str_detect(`Pregunta 9. ¿Qué tipo de preparados de NPC empleáis con mayor frecuencia? [Respuesta multiopción] :`,"a. Estandarizada."), 1, 0),
+    Tricamerales = ifelse(str_detect(`Pregunta 9. ¿Qué tipo de preparados de NPC empleáis con mayor frecuencia? [Respuesta multiopción] :`,"b. Tricamerales."), 1, 0),
+    Individualizadas = ifelse(str_detect(`Pregunta 9. ¿Qué tipo de preparados de NPC empleáis con mayor frecuencia? [Respuesta multiopción] :`,"c. Individualizadas"), 1, 0),
+    Ninguna_preg9 = ifelse(str_detect(`Pregunta 9. ¿Qué tipo de preparados de NPC empleáis con mayor frecuencia? [Respuesta multiopción] :`,"d. Ninguna"), 1, 0))
+# Crear tabla separado
+tabla_preg9_separado <- datos %>%
+                          group_by(`Comunidad Autónoma en la que trabajas:`) %>%
+                            summarise(
+                            Estandarizada = sum(Estandarizada, na.rm = TRUE),
+                            Tricamerales = sum(Tricamerales, na.rm = TRUE),
+                            Individualizadas = sum(Individualizadas, na.rm = TRUE),
+                            Ninguna = sum(Ninguna_preg9, na.rm = TRUE))
+Tabla_preg9_separado <- tabla_preg9_separado %>%
+  pivot_longer(cols = -`Comunidad Autónoma en la que trabajas:`, names_to = "Tipo NPC", values_to = "Cantidad")
+```
+
+```{r echo=FALSE}
+# Representar gráficamente
+ggplot(data = Tabla_preg9_separado,
+       aes(x = `Comunidad Autónoma en la que trabajas:`,
+           y = Cantidad,
+           fill = `Tipo NPC`)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_viridis_d(option = "turbo") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Comunidad Autónoma",
+       y = "Cantidad",
+       fill = "Tipo NPC")
+```
+
+### Pregunta 9 desglosada
+```{r echo=FALSE}
+# Crear tabla desglose
+tabla_preg9_desglosada <- datos %>%
+                            summarise(
+                            Estandarizada = sum(Estandarizada, na.rm = TRUE),
+                            Tricamerales = sum(Tricamerales, na.rm = TRUE),
+                            Individualizadas = sum(Individualizadas, na.rm = TRUE),
+                            Ninguna = sum(Ninguna_preg9, na.rm = TRUE))
+Tabla_preg9_desglosada <- tabla_preg9_desglosada %>%
+  pivot_longer(everything(), names_to = "Tipo NPC", values_to = "Total") %>%
+  mutate(Porcentaje = round(Total / 179 * 100, 1))
+# Representar gráficamente
+ggplot(Tabla_preg9_desglosada, aes(x = reorder(`Tipo NPC`, -Total), y = Total, fill = `Tipo NPC`)) +
+  geom_col() +
+  ylim(c(0, 115)) +
+  geom_text(aes(label = paste0(Total, " (", Porcentaje, "%)")), vjust = -0.5, size = 3) +
+  labs(
+    title = "Pregunta 9 desglosada",
+    x = "Tipo NPC",
+    y = "Total (y % sobre 179 respuestas)"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## Pregunta 10
+```{r echo=FALSE}
+conteo_preg10 <- table(datos$`Pregunta 10. ¿Inicias la NPC cuando no se consiga el 60% de los requerimientos nutricionales al cuarto día de ingreso, o a lo largo de la estancia, durante al menos 2 días consecutivos?`) # Conteo de respuestas
+porce_preg10 <- round(prop.table(table(datos$`Pregunta 10. ¿Inicias la NPC cuando no se consiga el 60% de los requerimientos nutricionales al cuarto día de ingreso, o a lo largo de la estancia, durante al menos 2 días consecutivos?`))*100, 1) # Porcentaje con 1 decimal
+# Crear tabla
+totales_preg10 <- data.frame(`Pregunta 10. ¿Inicias la NPC cuando no se consiga el 60% de los requerimientos nutricionales al cuarto día de ingreso, o a lo largo de la estancia, durante al menos 2 días consecutivos?` = "Total",
+                            Conteo = sum(conteo_preg10),
+                            Porcentaje = sum(porce_preg10),
+                            check.names = FALSE)
+tabla_preg10 <- data.frame(`Pregunta 10. ¿Inicias la NPC cuando no se consiga el 60% de los requerimientos nutricionales al cuarto día de ingreso, o a lo largo de la estancia, durante al menos 2 días consecutivos?` = names(conteo_preg10),
+                          Conteo = as.vector(conteo_preg10),
+                          Porcentaje = as.vector(porce_preg10),
+                          check.names = FALSE)
+Tabla_preg10 <- rbind(tabla_preg10, totales_preg10)
+kable(Tabla_preg10)
+# Representar gráficamente
+ggplot(tabla_preg10, aes(x=`Pregunta 10. ¿Inicias la NPC cuando no se consiga el 60% de los requerimientos nutricionales al cuarto día de ingreso, o a lo largo de la estancia, durante al menos 2 días consecutivos?`, y=Conteo)) +
+  geom_bar(stat="identity", fill=4) +
+  geom_text(aes(label = Conteo), vjust = -1, colour = "black") +
+  ylim(c(0, 80)) +
+  labs(
+    x= "Respuestas",
+    y="Número de respuestas",
+    title="¿Inicias la NPC cuando no se consiga el 60% de los requerimientos nutricionales al cuarto día de ingreso, o a lo largo de la estancia, durante al menos 2 días consecutivos?"
+  ) +
+  theme_minimal() +
+  theme(plot.title = element_text(size=6)) +
+  theme(axis.text.x = element_text(size=8, angle=0, hjust=0.5))
+```
+
+## Pregunta 11
+```{r echo=FALSE}
+conteo_preg11 <- table(datos$`Pregunta 11.  ¿Cuánto tiempo mantenéis la NPC una vez instaurada?`) # Conteo de respuestas
+porce_preg11 <- round(prop.table(table(datos$`Pregunta 11.  ¿Cuánto tiempo mantenéis la NPC una vez instaurada?`))*100, 1) # Porcentaje con 1 decimal
+# Crear tabla
+totales_preg11 <- data.frame(`Pregunta 11.  ¿Cuánto tiempo mantenéis la NPC una vez instaurada?` = "Total",
+                             Conteo = sum(conteo_preg11),
+                             Porcentaje = sum(porce_preg11),
+                             check.names = FALSE)
+tabla_preg11 <- data.frame(`Pregunta 11.  ¿Cuánto tiempo mantenéis la NPC una vez instaurada?` = names(conteo_preg11),
+                           Conteo = as.vector(conteo_preg11),
+                           Porcentaje = as.vector(porce_preg11),
+                           check.names = FALSE)
+Tabla_preg11 <- rbind(tabla_preg11, totales_preg11)
+kable(Tabla_preg11)
+# Representar gráficamente
+ggplot(tabla_preg11, aes(x=`Pregunta 11.  ¿Cuánto tiempo mantenéis la NPC una vez instaurada?`, y=Conteo)) +
+  geom_bar(stat="identity", fill=4) +
+  geom_text(aes(label = Conteo), vjust = -1, colour = "black") +
+  ylim(c(0, 180)) +
+  labs(
+    x= "Respuestas",
+    y="Número de respuestas",
+    title="¿Cuánto tiempo mantenéis la NPC una vez instaurada?"
+  ) +
+  theme_minimal() +
+  theme(plot.title = element_text(size=10)) +
+  theme(axis.text.x = element_text(size=8, angle=0, hjust=0.5))
+```
+
+## Pregunta 12
+```{r echo=FALSE}
+conteo_preg12 <- table(datos$`Pregunta 12.  ¿Cómo calculas los requerimientos energéticos? [Respuesta multiopción]`) # Conteo de respuestas
+porce_preg12 <- round(prop.table(table(datos$`Pregunta 12.  ¿Cómo calculas los requerimientos energéticos? [Respuesta multiopción]`))*100, 1) # Porcentaje con 1 decimal
+# Crear tabla
+totales_preg12 <- data.frame(`Pregunta 12.  ¿Cómo calculas los requerimientos energéticos? [Respuesta multiopción]` = "Total",
+                             Conteo = sum(conteo_preg12),
+                             Porcentaje = sum(porce_preg12),
+                             check.names = FALSE)
+tabla_preg12 <- data.frame(`Pregunta 12.  ¿Cómo calculas los requerimientos energéticos? [Respuesta multiopción]` = names(conteo_preg12),
+                           Conteo = as.vector(conteo_preg12),
+                           Porcentaje = as.vector(porce_preg12),
+                           check.names = FALSE)
+Tabla_preg12 <- rbind(tabla_preg12, totales_preg12)
+kable(Tabla_preg12)
+# Representar gráficamente
+ggplot(tabla_preg12, aes(x=str_wrap(`Pregunta 12.  ¿Cómo calculas los requerimientos energéticos? [Respuesta multiopción]`, width=40), y=Conteo)) +
+  geom_bar(stat="identity", fill=4) +
+  geom_text(aes(label = Conteo), vjust = -1, colour = "black") +
+  ylim(c(0, 95)) +
+  labs(
+    x= "Respuestas",
+    y="Número de respuestas",
+    title="¿Cómo calculas los requerimientos energéticos?"
+  ) +
+  theme_minimal() +
+  theme(plot.title = element_text(size=10)) +
+  theme(axis.text.x = element_text(size=8, angle=90, hjust=0))
+```
+
+### Pregunta 12 separado en cada comunidad
+```{r include=FALSE}
+# Desglose en binario
+datos <- datos %>%
+  mutate(
+    Cálculo_peso = ifelse(str_detect(`Pregunta 12.  ¿Cómo calculas los requerimientos energéticos? [Respuesta multiopción]`, "Ajustado por cálculo estimado según peso\\."), 1, 0),
+    Fórmulas = ifelse(str_detect(`Pregunta 12.  ¿Cómo calculas los requerimientos energéticos? [Respuesta multiopción]`, "Fórmulas \\(p\\.ej\\. Harris-Benedict\\)\\."), 1, 0),
+    Calorimetría_indirecta = ifelse(str_detect(`Pregunta 12.  ¿Cómo calculas los requerimientos energéticos? [Respuesta multiopción]`, "Calorimetría indirecta\\."), 1, 0),
+    Ninguna_preg12 = ifelse(str_detect(`Pregunta 12.  ¿Cómo calculas los requerimientos energéticos? [Respuesta multiopción]`, "Ninguno de los anteriores"), 1, 0)
+  )
+# Crear tabla separado
+tabla_preg12_separado <- datos %>%
+                          group_by(`Comunidad Autónoma en la que trabajas:`) %>%
+                            summarise(
+                            `Cálculo peso` = sum(Cálculo_peso, na.rm = TRUE),
+                            Fórmulas = sum(Fórmulas, na.rm = TRUE),
+                            `Calorimetría indirecta` = sum(Calorimetría_indirecta, na.rm = TRUE),
+                            Ninguna = sum(Ninguna_preg12, na.rm = TRUE))
+Tabla_preg12_separado <- tabla_preg12_separado %>%
+  pivot_longer(cols = -`Comunidad Autónoma en la que trabajas:`, names_to = "Requerimiento energético", values_to = "Cantidad")
+```
+
+```{r echo=FALSE}
+# Representar gráficamente
+ggplot(data = Tabla_preg12_separado,
+       aes(x = `Comunidad Autónoma en la que trabajas:`,
+           y = Cantidad,
+           fill = `Requerimiento energético`)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_viridis_d(option = "turbo") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Comunidad Autónoma",
+       y = "Cantidad",
+       fill = "Requerimiento energético")
+```
+
+### Pregunta 12 desglosada
+```{r echo=FALSE}
+# Crear tabla desglose
+tabla_preg12_desglosada <- datos %>%
+                            summarise(
+                            `Cálculo peso` = sum(Cálculo_peso, na.rm = TRUE),
+                            Fórmulas = sum(Fórmulas, na.rm = TRUE),
+                            `Calorimetría indirecta` = sum(Calorimetría_indirecta, na.rm = TRUE),
+                            Ninguna = sum(Ninguna_preg12, na.rm = TRUE))
+Tabla_preg12_desglosada <- tabla_preg12_desglosada %>%
+  pivot_longer(everything(), names_to = "Requerimiento energético", values_to = "Total") %>%
+  mutate(Porcentaje = round(Total / 179 * 100, 1))
+# Representar gráficamente
+ggplot(Tabla_preg12_desglosada, aes(x = reorder(`Requerimiento energético`, -Total), y = Total, fill = `Requerimiento energético`)) +
+  geom_col() +
+  ylim(c(0, 130)) +
+  geom_text(aes(label = paste0(Total, " (", Porcentaje, "%)")), vjust = -0.5, size = 3) +
+  labs(
+    title = "Pregunta 12 desglosada",
+    x = "Requerimiento energético",
+    y = "Total (y % sobre 179 respuestas)"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## Pregunta 13
+```{r echo=FALSE}
+conteo_preg13 <- table(datos$`Pregunta 13.  ¿Qué vía de administración empleáis habitualmente/de elección para administrar NPC? [Respuesta multiopción]`) # Conteo de respuestas
+porce_preg13 <- round(prop.table(table(datos$`Pregunta 13.  ¿Qué vía de administración empleáis habitualmente/de elección para administrar NPC? [Respuesta multiopción]`))*100, 1) # Porcentaje con 1 decimal
+# Crear tabla
+totales_preg13 <- data.frame(`Pregunta 13.  ¿Qué vía de administración empleáis habitualmente/de elección para administrar NPC? [Respuesta multiopción]` = "Total",
+                             Conteo = sum(conteo_preg13),
+                             Porcentaje = sum(porce_preg13),
+                             check.names = FALSE)
+tabla_preg13 <- data.frame(`Pregunta 13.  ¿Qué vía de administración empleáis habitualmente/de elección para administrar NPC? [Respuesta multiopción]` = names(conteo_preg13),
+                           Conteo = as.vector(conteo_preg13),
+                           Porcentaje = as.vector(porce_preg13),
+                           check.names = FALSE)
+Tabla_preg13 <- rbind(tabla_preg13, totales_preg13)
+kable(Tabla_preg13)
+# Representar gráficamente
+ggplot(tabla_preg13, aes(x=str_wrap(`Pregunta 13.  ¿Qué vía de administración empleáis habitualmente/de elección para administrar NPC? [Respuesta multiopción]`, width=40), y=Conteo)) +
+  geom_bar(stat="identity", fill=4) +
+  geom_text(aes(label = Conteo), vjust = -1, colour = "black") +
+  ylim(c(0, 95)) +
+  labs(
+    x= "Respuestas",
+    y="Número de respuestas",
+    title="¿Qué vía de administración empleáis habitualmente/de elección para administrar NPC?"
+  ) +
+  theme_minimal() +
+  theme(plot.title = element_text(size=10)) +
+  theme(axis.text.x = element_text(size=8, angle=90, hjust=0))
+```
+
+### Pregunta 13 separado en cada comunidad
+```{r include=FALSE}
+# Desglose en binario
+datos <- datos %>%
+  mutate(
+    Venoso_central = ifelse(str_detect(`Pregunta 13.  ¿Qué vía de administración empleáis habitualmente/de elección para administrar NPC? [Respuesta multiopción]`, "a. Catéter venoso central."), 1, 0),
+    Venoso_central_periférica = ifelse(str_detect(`Pregunta 13.  ¿Qué vía de administración empleáis habitualmente/de elección para administrar NPC? [Respuesta multiopción]`,"b. Catéter venoso central de inserción periférica."), 1, 0),
+    Periférica = ifelse(str_detect(`Pregunta 13.  ¿Qué vía de administración empleáis habitualmente/de elección para administrar NPC? [Respuesta multiopción]`, "c. Vía periférica"), 1, 0))
+# Crear tabla separado
+tabla_preg13_separado <- datos %>%
+                          group_by(`Comunidad Autónoma en la que trabajas:`) %>%
+                            summarise(
+                            `Venoso central` = sum(Venoso_central, na.rm = TRUE),
+                            `Venoso central periférica` = sum(Venoso_central_periférica, na.rm = TRUE),
+                            Periférica = sum(Periférica, na.rm = TRUE))
+Tabla_preg13_separado <- tabla_preg13_separado %>%
+  pivot_longer(cols = -`Comunidad Autónoma en la que trabajas:`, names_to = "Vía administración", values_to = "Cantidad")
+```
+
+```{r echo=FALSE}
+# Representar gráficamente
+ggplot(data = Tabla_preg13_separado,
+       aes(x = `Comunidad Autónoma en la que trabajas:`,
+           y = Cantidad,
+           fill = `Vía administración`)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_viridis_d(option = "turbo") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Comunidad Autónoma",
+       y = "Cantidad",
+       fill = "Vía administración")
+```
+
+### Pregunta 13 desglosada
+```{r echo=FALSE}
+# Crear tabla desglose
+tabla_preg13_desglosada <- datos %>%
+                            summarise(
+                            `Venoso central` = sum(Venoso_central, na.rm = TRUE),
+                            `Venoso central periférica` = sum(Venoso_central_periférica, na.rm = TRUE),
+                            Periférica = sum(Periférica, na.rm = TRUE))
+Tabla_preg13_desglosada <- tabla_preg13_desglosada %>%
+  pivot_longer(everything(), names_to = "Vía administración", values_to = "Total") %>%
+  mutate(Porcentaje = round(Total / 179 * 100, 1))
+# Representar gráficamente
+ggplot(Tabla_preg13_desglosada, aes(x = reorder(`Vía administración`, -Total), y = Total, fill = `Vía administración`)) +
+  geom_col() +
+  ylim(c(0, 170)) +
+  geom_text(aes(label = paste0(Total, " (", Porcentaje, "%)")), vjust = -0.5, size = 3) +
+  labs(
+    title = "Pregunta 13 desglosada",
+    x = "Vía administración",
+    y = "Total (y % sobre 179 respuestas)"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## Pregunta 14
+```{r echo=FALSE}
+conteo_preg14 <- table(datos$`Pregunta 14. ¿Qué monitorizas en relación al tratamiento nutricional parenteral? [Respuesta multiopción]`) # Conteo de respuestas
+porce_preg14 <- round(prop.table(table(datos$`Pregunta 14. ¿Qué monitorizas en relación al tratamiento nutricional parenteral? [Respuesta multiopción]`))*100, 1) # Porcentaje con 1 decimal
+# Crear tabla
+totales_preg14 <- data.frame(`Pregunta 14. ¿Qué monitorizas en relación al tratamiento nutricional parenteral? [Respuesta multiopción]` = "Total",
+                             Conteo = sum(conteo_preg14),
+                             Porcentaje = sum(porce_preg14),
+                             check.names = FALSE)
+tabla_preg14 <- data.frame(`Pregunta 14. ¿Qué monitorizas en relación al tratamiento nutricional parenteral? [Respuesta multiopción]` = names(conteo_preg14),
+                           Conteo = as.vector(conteo_preg14),
+                           Porcentaje = as.vector(porce_preg14),
+                           check.names = FALSE)
+Tabla_preg14 <- rbind(tabla_preg14, totales_preg14)
+kable(Tabla_preg14)
+# Representar gráficamente
+ggplot(tabla_preg14, aes(x=str_wrap(`Pregunta 14. ¿Qué monitorizas en relación al tratamiento nutricional parenteral? [Respuesta multiopción]`, width=40), y=Conteo)) +
+  geom_bar(stat="identity", fill=4) +
+  geom_text(aes(label = Conteo), vjust = -1, colour = "black") +
+  ylim(c(0, 140)) +
+  labs(
+    x= "Respuestas",
+    y="Número de respuestas",
+    title="¿Qué monitorizas en relación al tratamiento nutricional parenteral?"
+  ) +
+  theme_minimal() +
+  theme(plot.title = element_text(size=10)) +
+  theme(axis.text.x = element_text(size=8, angle=90, hjust=0))
+```
+
+### Pregunta 14 separado en cada comunidad
+```{r include=FALSE}
+# Desglose en binario
+datos <- datos %>%
+  mutate(
+    Glucemia = ifelse(str_detect(`Pregunta 14. ¿Qué monitorizas en relación al tratamiento nutricional parenteral? [Respuesta multiopción]`, "a. La glucemia."), 1, 0),
+    Requerimientos = ifelse(str_detect(`Pregunta 14. ¿Qué monitorizas en relación al tratamiento nutricional parenteral? [Respuesta multiopción]`,"b. Los requerimientos energéticos/proteicos administrados."), 1, 0),
+    Analítico = ifelse(str_detect(`Pregunta 14. ¿Qué monitorizas en relación al tratamiento nutricional parenteral? [Respuesta multiopción]`, "c\\. Los parámetros analíticos \\(p\\.ej\\. función hepática\\)\\."), 1, 0),
+    Ninguno = ifelse(str_detect(`Pregunta 14. ¿Qué monitorizas en relación al tratamiento nutricional parenteral? [Respuesta multiopción]`,"d. Ninguno de los mencionados"), 1, 0))
+# Crear tabla separado
+tabla_preg14_separado <- datos %>%
+                          group_by(`Comunidad Autónoma en la que trabajas:`) %>%
+                            summarise(
+                            Glucemia = sum(Glucemia, na.rm = TRUE),
+                            Requerimientos = sum(Requerimientos, na.rm = TRUE),
+                            Analítico = sum(Analítico, na.rm = TRUE),
+                            Ninguno = sum(Ninguno, na.rm = TRUE))
+Tabla_preg14_separado <- tabla_preg14_separado %>%
+  pivot_longer(cols = -`Comunidad Autónoma en la que trabajas:`, names_to = "Monitorizar NPC", values_to = "Cantidad")
+```
+
+```{r echo=FALSE}
+# Representar gráficamente
+ggplot(data = Tabla_preg14_separado,
+       aes(x = `Comunidad Autónoma en la que trabajas:`,
+           y = Cantidad,
+           fill = `Monitorizar NPC`)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_viridis_d(option = "turbo") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Comunidad Autónoma",
+       y = "Cantidad",
+       fill = "Monitorizar NPC")
+```
+
+### Pregunta 14 desglosada
+```{r echo=FALSE}
+# Crear tabla desglose
+tabla_preg14_desglosada <- datos %>%
+                            summarise(
+                            Glucemia = sum(Glucemia, na.rm = TRUE),
+                            Requerimientos = sum(Requerimientos, na.rm = TRUE),
+                            Analítico = sum(Analítico, na.rm = TRUE),
+                            Ninguno = sum(Ninguno, na.rm = TRUE))
+Tabla_preg14_desglosada <- tabla_preg14_desglosada %>%
+  pivot_longer(everything(), names_to = "Monitorizar NPC", values_to = "Total") %>%
+  mutate(Porcentaje = round(Total / 179 * 100, 1))
+# Representar gráficamente
+ggplot(Tabla_preg14_desglosada, aes(x = reorder(`Monitorizar NPC`, -Total), y = Total, fill = `Monitorizar NPC`)) +
+  geom_col() +
+  ylim(c(0, 180)) +
+  geom_text(aes(label = paste0(Total, " (", Porcentaje, "%)")), vjust = -0.5, size = 3) +
+  labs(
+    title = "Pregunta 14 desglosada",
+    x = "Monitorizar NPC",
+    y = "Total (y % sobre 179 respuestas)"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## Pregunta 15
+```{r echo=FALSE}
+conteo_preg15 <- table(datos$`Pregunta 15.  ¿En tus informes de ALTA consta que el paciente ha precisado NPC?`) # Conteo de respuestas
+porce_preg15 <- round(prop.table(table(datos$`Pregunta 15.  ¿En tus informes de ALTA consta que el paciente ha precisado NPC?`))*100, 1) # Porcentaje con 1 decimal
+# Crear tabla
+totales_preg15 <- data.frame(`Pregunta 15.  ¿En tus informes de ALTA consta que el paciente ha precisado NPC?` = "Total",
+                             Conteo = sum(conteo_preg15),
+                             Porcentaje = sum(porce_preg15),
+                             check.names = FALSE)
+tabla_preg15 <- data.frame(`Pregunta 15.  ¿En tus informes de ALTA consta que el paciente ha precisado NPC?` = names(conteo_preg15),
+                           Conteo = as.vector(conteo_preg15),
+                           Porcentaje = as.vector(porce_preg15),
+                           check.names = FALSE)
+Tabla_preg15 <- rbind(tabla_preg15, totales_preg15)
+kable(Tabla_preg15)
+
+tabla_preg15$`Pregunta 15.  ¿En tus informes de ALTA consta que el paciente ha precisado NPC?` <-
+  str_wrap(tabla_preg15$`Pregunta 15.  ¿En tus informes de ALTA consta que el paciente ha precisado NPC?`, width = 25)
+# Representar gráficamente
+ggplot(tabla_preg15,
+       aes(x = `Pregunta 15.  ¿En tus informes de ALTA consta que el paciente ha precisado NPC?`, y = Conteo)) +
+  geom_bar(stat = "identity", fill = 4) +
+  geom_text(aes(label = Conteo), vjust = -0.5, colour = "black") +
+  ylim(c(0, 90)) +
+  labs(
+    x = "Respuestas",
+    y = "Número de respuestas",
+    title = "¿En tus informes de ALTA consta que el paciente ha precisado NPC?"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 10),
+    axis.text.x = element_text(size = 8, angle = 0, hjust = 0.5, vjust = 1)
+  )
+``` 
+
+## Pregunta 16
+```{r echo=FALSE}
+conteo_preg16 <- table(datos$`Pregunta 16.  ¿En tu centro se utiliza la NPC en planta tras el alta de UCI?`) # Conteo de respuestas
+porce_preg16 <- round(prop.table(table(datos$`Pregunta 16.  ¿En tu centro se utiliza la NPC en planta tras el alta de UCI?`))*100, 1) # Porcentaje con 1 decimal
+# Crear tabla
+totales_preg16 <- data.frame(`Pregunta 16.  ¿En tu centro se utiliza la NPC en planta tras el alta de UCI?` = "Total",
+                             Conteo = sum(conteo_preg16),
+                             Porcentaje = sum(porce_preg16),
+                             check.names = FALSE)
+tabla_preg16 <- data.frame(`Pregunta 16.  ¿En tu centro se utiliza la NPC en planta tras el alta de UCI?` = names(conteo_preg16),
+                           Conteo = as.vector(conteo_preg16),
+                           Porcentaje = as.vector(porce_preg16),
+                           check.names = FALSE)
+Tabla_preg16 <- rbind(tabla_preg16, totales_preg16)
+kable(Tabla_preg16)
+# Representar gráficamente
+ggplot(tabla_preg16, aes(x=`Pregunta 16.  ¿En tu centro se utiliza la NPC en planta tras el alta de UCI?`, y=Conteo)) +
+  geom_bar(stat="identity", fill=4) +
+  geom_text(aes(label = Conteo), vjust = -1, colour = "black") +
+  ylim(c(0, 70)) +
+  labs(
+    x= "Respuestas",
+    y="Número de respuestas",
+    title="¿En tu centro se utiliza la NPC en planta tras el alta de UCI?"
+  ) +
+  theme_minimal() +
+  theme(plot.title = element_text(size=10)) +
+  theme(axis.text.x = element_text(size=8, angle=0, hjust=0.5))
+```
+
+## Pregunta 17
+```{r echo=FALSE}
+conteo_preg17 <- table(datos$`Pregunta 17. En cuanto a la formación continuada/actualización periódica en nutrición hospitalaria, consideras que respecto a la NPC`) # Conteo de respuestas
+porce_preg17 <- round(prop.table(table(datos$`Pregunta 17. En cuanto a la formación continuada/actualización periódica en nutrición hospitalaria, consideras que respecto a la NPC`))*100, 1) # Porcentaje con 1 decimal
+# Crear tabla
+totales_preg17 <- data.frame(`Pregunta 17. En cuanto a la formación continuada/actualización periódica en nutrición hospitalaria, consideras que respecto a la NPC` = "Total",
+                             Conteo = sum(conteo_preg17),
+                             Porcentaje = sum(porce_preg17),
+                             check.names = FALSE)
+tabla_preg17 <- data.frame(`Pregunta 17. En cuanto a la formación continuada/actualización periódica en nutrición hospitalaria, consideras que respecto a la NPC` = names(conteo_preg17),
+                           Conteo = as.vector(conteo_preg17),
+                           Porcentaje = as.vector(porce_preg17),
+                           check.names = FALSE)
+Tabla_preg17 <- rbind(tabla_preg17, totales_preg17)
+kable(Tabla_preg17)
+
+tabla_preg17$`Pregunta 17. En cuanto a la formación continuada/actualización periódica en nutrición hospitalaria, consideras que respecto a la NPC` <-
+  str_wrap(tabla_preg17$`Pregunta 17. En cuanto a la formación continuada/actualización periódica en nutrición hospitalaria, consideras que respecto a la NPC`, width = 25)
+# Representar gráficamente
+ggplot(tabla_preg17, aes(
+  x = `Pregunta 17. En cuanto a la formación continuada/actualización periódica en nutrición hospitalaria, consideras que respecto a la NPC`,
+  y = Conteo
+)) +
+  geom_bar(stat = "identity", fill = 4) +
+  geom_text(aes(label = Conteo), vjust = -0.5, colour = "black") +
+  ylim(c(0, 110)) +
+  labs(
+    x = "Respuestas",
+    y = "Número de respuestas",
+    title = "Formación continuada/actualización periódica en nutrición hospitalaria respecto a la NPC"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 10),
+    axis.text.x = element_text(size = 8, angle = 0, hjust = 0.5)
+  )
+```
+### Pregunta 17 SI y NO
+```{r echo=FALSE}
+# Desglose en binario
+tabla_preg17_separado <- datos %>%
+  mutate(
+    `Considero que estoy actualizado` = ifelse(str_detect(`Pregunta 17. En cuanto a la formación continuada/actualización periódica en nutrición hospitalaria, consideras que respecto a la NPC`,"Considero"), 1, 0),
+    `Hace tiempo que no reviso este aspecto` = ifelse(str_detect(`Pregunta 17. En cuanto a la formación continuada/actualización periódica en nutrición hospitalaria, consideras que respecto a la NPC`,"Hace"), 1, 0),
+    `No lo considero un aspecto prioritario` = ifelse(str_detect(`Pregunta 17. En cuanto a la formación continuada/actualización periódica en nutrición hospitalaria, consideras que respecto a la NPC`,"No"), 1, 0),
+    `No considero que estoy actualizado/No es prioritario` = ifelse(`Hace tiempo que no reviso este aspecto` == 1 | `No lo considero un aspecto prioritario` == 1, 1, 0))
+# Crear tabla desglose
+tabla_preg17_desglosado <- tabla_preg17_separado %>%
+  summarise(
+    `Considero que estoy actualizado` = sum(`Considero que estoy actualizado`, na.rm = TRUE),
+    `No considero que estoy actualizado/No es prioritario` = sum(`No considero que estoy actualizado/No es prioritario`, na.rm = TRUE)
+  )
+Tabla_preg17_desglosado <- tabla_preg17_desglosado %>%
+  pivot_longer(everything(), names_to = "Formación", values_to = "Total") %>%
+  mutate(Porcentaje = round(Total / 179 * 100, 1))
+kable(Tabla_preg17_desglosado)
+```
+
+```{r echo=FALSE}
+# Representar gráficamente
+ggplot(Tabla_preg17_desglosado, aes(x = reorder(Formación, -Total), y = Total, fill = Formación)) +
+  geom_col() +
+  ylim(c(0, 120)) +
+  geom_text(aes(label = paste0(Total, " (", Porcentaje, "%)")), vjust = -0.5, size = 3) +
+  labs(
+    title = "Pregunta 17 Si y No",
+    x = "Formación",
+    y = "Total (y % sobre 179 respuestas)"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(angle = 0, hjust = 0.5))
+```
+
+## Formación
+```{r echo=FALSE}
+conteo_par <- table(datos$`¿Estarías dispuesto a participar en formación y/o participar en estudios relacionados con la NPC o terapia nutricional en el paciente crítico?`) # Conteo de respuestas
+porce_par <- round(prop.table(table(datos$`¿Estarías dispuesto a participar en formación y/o participar en estudios relacionados con la NPC o terapia nutricional en el paciente crítico?`))*100, 1) # Porcentaje con 1 decimal
+# Crear tabla
+totales_par <- data.frame(`¿Estarías dispuesto a participar en formación y/o participar en estudios relacionados con la NPC o terapia nutricional en el paciente crítico?` = "Total",
+                             Conteo = sum(conteo_par),
+                             Porcentaje = sum(porce_par),
+                             check.names = FALSE)
+tabla_par <- data.frame(`¿Estarías dispuesto a participar en formación y/o participar en estudios relacionados con la NPC o terapia nutricional en el paciente crítico?` = names(conteo_par),
+                           Conteo = as.vector(conteo_par),
+                           Porcentaje = as.vector(porce_par),
+                           check.names = FALSE)
+Tabla_par <- rbind(tabla_par, totales_par)
+kable(Tabla_par)
+# Representar gráficamente
+ggplot(tabla_par, aes(x=`¿Estarías dispuesto a participar en formación y/o participar en estudios relacionados con la NPC o terapia nutricional en el paciente crítico?`, y=Conteo)) +
+  geom_bar(stat="identity", fill=4) +
+  geom_text(aes(label = Conteo), vjust = -1, colour = "black") +
+  ylim(c(0, 160)) +
+  labs(
+    x="¿Participarías en formación o estudios sobre NPC o terapia nutricional?",
+    y="Número de respuestas",
+    title="Participación en formación o estudios sobre NPC o terapia nutricional"
+  ) +
+   theme_minimal() +
+  theme(plot.title = element_text(size=10)) +
+  theme(axis.text.x = element_text(size=9, angle=45, hjust=1))
+```
+
+# Análisis
+## Comunidad autonoma comparación grupos respecto a preguntas
+```{r include=FALSE}
+datos$Comunidad <- factor(datos$`Comunidad Autónoma en la que trabajas:`) # Convertir a factor
+# Función para el análisis
+func_com_aut <- function(datos, columna) {
+  datos[[columna]] <- factor(datos[[columna]])
+  tabla <- table(datos[[columna]], datos$Comunidad)
+  chi <- chisq.test(tabla, simulate.p.value = TRUE, B = 1000000) # Realizar Chi-cuadrado con simulación
+  fisher <- fisher.test(tabla, simulate.p.value = TRUE, B = 1000000) # Realizar Fisher con simulación
+  chi_res <- round(chi$stdres, 2) # Residuos tipificados
+  expected <- chi$expected # Frecuencias esperadas
+  return(list(
+    chi_test = chi, # Resultado del test chi-cuadrado
+    fisher_test = fisher, # Resultado del test exacto de Fisher
+    chi_res,  # Residuos tipificados
+    tabla_procentaje_subgrupo = round(prop.table(tabla, margin = 2) * 100, 2), # Porcentaje subgrupo
+    tabla_procentaje_respuesta = round(prop.table(tabla, margin = 1) * 100, 2) # Porcentaje respuesta
+  ))
+}
+```
+
+```{r include=FALSE}
+# Preguntas donde aplicar la función
+preguntas <- c(
+  "Pregunta 1.  ¿Existe un protocolo de tratamiento nutricional específico en tu unidad que incluya NPC?",
+  "Pregunta 2.  ¿Conoces el concepto de NPC y sus indicaciones?",
+  "Pregunta 3.  ¿Quién es el principal responsable de prescribir/ indicar la NP en tu unidad? [Respuesta multiopción]",
+  "Pregunta 4.  ¿Utilizas la NPC cuando no se consigue cubrir requerimientos con NE?",
+  "Pregunta 5. En tu opinión, ¿Qué razones sustentan el inicio de una NPC?\r\n[Respuesta multiopción]",
+  "Pregunta 6. ¿Utilizas procinéticos antes de iniciar la NPC para mejorar la tolerancia a la nutrición enteral?",
+  "Pregunta 7. En caso de continuar con intolerancia a la nutrición enteral a pesar de los procinéticos, ¿se considera el acceso postpilórico antes de la NPC?",
+  "Pregunta 8. ¿Cuál es tu principal objetivo al prescribir una NPC en vuestra UCI? [Respuesta multiopción]",
+  "Pregunta 9. ¿Qué tipo de preparados de NPC empleáis con mayor frecuencia? [Respuesta multiopción] :",
+  "Pregunta 10. ¿Inicias la NPC cuando no se consiga el 60% de los requerimientos nutricionales al cuarto día de ingreso, o a lo largo de la estancia, durante al menos 2 días consecutivos?",
+  "Pregunta 11.  ¿Cuánto tiempo mantenéis la NPC una vez instaurada?",
+  "Pregunta 12.  ¿Cómo calculas los requerimientos energéticos? [Respuesta multiopción]",
+  "Pregunta 13.  ¿Qué vía de administración empleáis habitualmente/de elección para administrar NPC? [Respuesta multiopción]",
+  "Pregunta 14. ¿Qué monitorizas en relación al tratamiento nutricional parenteral? [Respuesta multiopción]",
+  "Pregunta 15.  ¿En tus informes de ALTA consta que el paciente ha precisado NPC?",
+  "Pregunta 16.  ¿En tu centro se utiliza la NPC en planta tras el alta de UCI?",
+  "Pregunta 17. En cuanto a la formación continuada/actualización periódica en nutrición hospitalaria, consideras que respecto a la NPC",
+  "¿Estarías dispuesto a participar en formación y/o participar en estudios relacionados con la NPC o terapia nutricional en el paciente crítico?","Intensivista","Farmacéutico","Anestesista","Endocrinólogo","Cirujano","Medicina interna","Pediatría","Cardiología","Reanimación","Nutricionista","Intolerancia_de_NE","Riesgo_complicaciones","Inestabilidad_hemodinámica","Contraindicación_NE","Hipertensión_intraabdominal","Imposibilidad_via_enteral","Ninguna","No_alcanzar_requerimientos","Cubrir_Necesidad","Incrementar_Proteico","Incrementar_Calorico","No_Utilizo_NPC","Estandarizada","Tricamerales","Individualizadas","Ninguna_preg9","Cálculo_peso","Fórmulas","Calorimetría_indirecta","Ninguno","Venoso_central","Venoso_central_periférica","Periférica","Glucemia","Requerimientos","Analítico","Ninguno"
+)
+# Aplicar función en todas las preguntas
+resultados <- lapply(preguntas, function(p) func_com_aut(datos, p))
+```
+
+```{r echo=FALSE}
+# Crear tabla
+tabla_resumen <- data.frame(
+  Pregunta = preguntas,
+  Chi_p = sapply(resultados, function(x) x$chi_test$p.value),
+  Fisher_p = sapply(resultados, function(x) x$fisher_test$p.value)
+)
+
+tabla_resumen$Significativa <- with(tabla_resumen, 
+  ifelse(Chi_p < 0.05 & Fisher_p < 0.05, "Ambas",
+  ifelse(Chi_p < 0.05, "Chi",
+  ifelse(Fisher_p < 0.05, "Fisher", "No")))
+)
+# Redondear p-valores
+tabla_resumen$Chi_p <- round(tabla_resumen$Chi_p, 4)
+tabla_resumen$Fisher_p <- round(tabla_resumen$Fisher_p, 4)
+
+kable(tabla_resumen)
+```
+
+### Preguntas significativas
+
+#### Pregunta 3.  ¿Quién es el principal responsable de prescribir/ indicar la NP en tu unidad? [Respuesta multiopción]
+```{r echo=FALSE}
+# Aplicar función
+func_com_aut(datos,"Pregunta 3.  ¿Quién es el principal responsable de prescribir/ indicar la NP en tu unidad? [Respuesta multiopción]")
+```
+
+#### Pregunta 7. En caso de continuar con intolerancia a la nutrición enteral a pesar de los procinéticos, ¿se considera el acceso postpilórico antes de la NPC?
+```{r echo=FALSE}
+# Aplicar función
+func_com_aut(datos,"Pregunta 7. En caso de continuar con intolerancia a la nutrición enteral a pesar de los procinéticos, ¿se considera el acceso postpilórico antes de la NPC?")
+```
+
+#### Pregunta 12.  ¿Cómo calculas los requerimientos energéticos? [Respuesta multiopción]
+```{r echo=FALSE}
+# Aplicar función
+func_com_aut(datos,"Pregunta 12.  ¿Cómo calculas los requerimientos energéticos? [Respuesta multiopción]")
+```
+
+#### Pregunta 13.  ¿Qué vía de administración empleáis habitualmente/de elección para administrar NPC? [Respuesta multiopción]
+```{r echo=FALSE}
+# Aplicar función
+func_com_aut(datos,"Pregunta 13.  ¿Qué vía de administración empleáis habitualmente/de elección para administrar NPC? [Respuesta multiopción]" )
+```
+
+#### Pregunta 14. ¿Qué monitorizas en relación al tratamiento nutricional parenteral? [Respuesta multiopción]
+```{r echo=FALSE}
+# Aplicar función
+func_com_aut(datos,"Pregunta 14. ¿Qué monitorizas en relación al tratamiento nutricional parenteral? [Respuesta multiopción]")
+```
+
+####Pregunta 17. En cuanto a la formación continuada/actualización periódica en nutrición hospitalaria, consideras que respecto a la NPC
+```{r echo=FALSE}
+# Aplicar función
+func_com_aut(datos,"Pregunta 17. En cuanto a la formación continuada/actualización periódica en nutrición hospitalaria, consideras que respecto a la NPC" )
+```
+
+#### Intensivista
+```{r echo=FALSE}
+# Aplicar función
+func_com_aut(datos,"Intensivista")
+```
+
+#### Farmacéutico
+```{r echo=FALSE}
+# Aplicar función
+func_com_aut(datos,"Farmacéutico")
+```
+
+#### Anestesista
+```{r echo=FALSE}
+# Aplicar función
+func_com_aut(datos,"Anestesista")
+```
+
+#### Endocrinólogo
+```{r echo=FALSE}
+# Aplicar función
+func_com_aut(datos,"Endocrinólogo")
+```
+
+#### Hipertensión intraabdominal
+```{r echo=FALSE}
+# Aplicar función
+func_com_aut(datos,"Hipertensión_intraabdominal")
+```
+
+#### No alcanzar requerimientos
+```{r echo=FALSE}
+# Aplicar función
+func_com_aut(datos,"No_alcanzar_requerimientos")
+```
+
+#### Cubrir Necesidad
+```{r echo=FALSE}
+# Aplicar función
+func_com_aut(datos,"Cubrir_Necesidad")
+```
+
+#### Tricamerales
+```{r echo=FALSE}
+# Aplicar función
+func_com_aut(datos,"Tricamerales")
+```
+
+#### Individualizadas
+```{r echo=FALSE}
+# Aplicar función
+func_com_aut(datos,"Individualizadas")
+```
+
+#### Calorimetría indirecta
+```{r echo=FALSE}
+# Aplicar función
+func_com_aut(datos,"Calorimetría_indirecta")
+```
+
+#### Venoso central
+```{r echo=FALSE}
+# Aplicar función
+func_com_aut(datos,"Venoso_central")
+```
+
+#### Glucemia
+```{r echo=FALSE}
+# Aplicar función
+func_com_aut(datos,"Glucemia")
+```
+
+#### Requerimientos
+```{r echo=FALSE}
+# Aplicar función
+func_com_aut(datos,"Requerimientos")
+```
+
+## Tipo de UCI
+```{r include=FALSE}
+# Función para el análisis
+func_tip_uci <- function(datos, columna) {
+  datos[[columna]] <- factor(datos[[columna]])
+  tabla <- table(datos[[columna]], datos$`Tipo de UCI`)
+  chi <- chisq.test(tabla, simulate.p.value = TRUE, B = 1000000) # Realizar Chi-cuadrado con simulación
+  fisher <- fisher.test(tabla, simulate.p.value = TRUE, B = 1000000) # Realizar Fisher con simulación
+  chi_res <- round(chi$stdres, 2) # Residuos tipificados
+  return(list(
+    chi_test = chi, # Resultado del test chi-cuadrado
+    fisher_test = fisher, # Resultado del test exacto de Fisher
+    chi_res, # Residuos tipificados
+    tabla_porcentaje_subgrupo = round(prop.table(tabla, margin = 2) * 100, 2), # Porcentaje subgrupo
+    tabla_porcentaje_respuesta= round(prop.table(tabla, margin = 1) * 100, 2) # Porcentaje respuesta
+  ))
+}
+```
+
+```{r include=FALSE}
+# Aplicar funcióna todas las preguntas
+resultados <- lapply(preguntas, function(p) func_tip_uci(datos, p))
+```
+
+```{r echo=FALSE}
+# Crear tabla
+tabla_resumen <- data.frame(
+  Pregunta = preguntas,
+  Chi_p = sapply(resultados, function(x) x$chi_test$p.value),
+  Fisher_p = sapply(resultados, function(x) x$fisher_test$p.value)
+)
+
+tabla_resumen$Significativa <- with(tabla_resumen, 
+  ifelse(Chi_p < 0.05 & Fisher_p < 0.05, "Ambas",
+  ifelse(Chi_p < 0.05, "Chi",
+  ifelse(Fisher_p < 0.05, "Fisher", "No")))
+)
+# Redondear p-valores
+tabla_resumen$Chi_p <- round(tabla_resumen$Chi_p, 4)
+tabla_resumen$Fisher_p <- round(tabla_resumen$Fisher_p, 4)
+
+kable(tabla_resumen)
+```
+
+### Preguntas significativas
+
+#### Pregunta 3.  ¿Quién es el principal responsable de prescribir/ indicar la NP en tu unidad? [Respuesta multiopción]
+```{r echo=FALSE}
+# Aplicar función
+func_tip_uci(datos,"Pregunta 3.  ¿Quién es el principal responsable de prescribir/ indicar la NP en tu unidad? [Respuesta multiopción]")
+```
+
+#### Intensivista
+```{r echo=FALSE}
+# Aplicar función
+func_tip_uci(datos,"Intensivista")
+```
+
+#### Endocrinólogo
+```{r echo=FALSE}
+# Aplicar función
+func_tip_uci(datos,"Endocrinólogo")
+```
+
+#### Cubrir Necesidad
+```{r echo=FALSE}
+# Aplicar función
+func_tip_uci(datos,"Cubrir_Necesidad")
+```
+
+#### No Utilizo NPC
+```{r echo=FALSE}
+# Aplicar función
+func_tip_uci(datos,"No_Utilizo_NPC")
+```
+
+## Rango camas total
+```{r include=FALSE}
+# Función para el análisis
+func_rango <- function(datos, columna) {
+  datos[[columna]] <- factor(datos[[columna]])
+  tabla <- table(datos[[columna]], datos$Rango_camas)
+  chi <- chisq.test(tabla, simulate.p.value = TRUE, B = 1000000) # Realizar Chi-cuadrado con simulación
+  fisher <- fisher.test(tabla, simulate.p.value = TRUE, B = 1000000) # Realizar Fisher con simulación
+  chi_res <- round(chi$stdres, 2) # Residuos tipificados
+  return(list(
+    chi_test = chi, # Resultado del test chi-cuadrado
+    fisher_test = fisher, # Resultado del test exacto de Fisher
+    chi_res, # Residuos tipificados
+    tabla_porcentaje_subgrupo = round(prop.table(tabla, margin = 2) * 100, 2), # Porcentaje subgrupo
+    tabla_porcentaje_respuesta= round(prop.table(tabla, margin = 1) * 100, 2) # Porcentaje respuesta
+  ))
+}
+```
+
+```{r include=FALSE}
+# Aplicar funcióna todas las preguntas
+resultados <- lapply(preguntas, function(p) func_rango(datos, p))
+```
+
+```{r echo=FALSE}
+# Crear tabla
+tabla_resumen <- data.frame(
+  Pregunta = preguntas,
+  Chi_p = sapply(resultados, function(x) x$chi_test$p.value),
+  Fisher_p = sapply(resultados, function(x) x$fisher_test$p.value)
+)
+
+tabla_resumen$Significativa <- with(tabla_resumen, 
+  ifelse(Chi_p < 0.05 & Fisher_p < 0.05, "Ambas",
+  ifelse(Chi_p < 0.05, "Chi",
+  ifelse(Fisher_p < 0.05, "Fisher", "No")))
+)
+# Redondear p-valores
+tabla_resumen$Chi_p <- round(tabla_resumen$Chi_p, 4)
+tabla_resumen$Fisher_p <- round(tabla_resumen$Fisher_p, 4)
+
+kable(tabla_resumen)
+```
+
+### Preguntas significativas
+#### Pregunta 4.  ¿Utilizas la NPC cuando no se consigue cubrir requerimientos con NE?
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 4.  ¿Utilizas la NPC cuando no se consigue cubrir requerimientos con NE?")
+```
+
+#### Pregunta 12.  ¿Cómo calculas los requerimientos energéticos? [Respuesta multiopción]
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 12.  ¿Cómo calculas los requerimientos energéticos? [Respuesta multiopción]")
+```
+
+#### Pregunta 16.  ¿En tu centro se utiliza la NPC en planta tras el alta de UCI?
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 16.  ¿En tu centro se utiliza la NPC en planta tras el alta de UCI?")
+```
+
+#### Pregunta 17. En cuanto a la formación continuada/actualización periódica en nutrición hospitalaria, consideras que respecto a la NPC
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 17. En cuanto a la formación continuada/actualización periódica en nutrición hospitalaria, consideras que respecto a la NPC" )
+```
+
+#### Intensivista
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Intensivista")
+```
+
+#### Ninguna pregunta 9
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Ninguna_preg9")
+```
+
+#### Calorimetría indirecta
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Calorimetría_indirecta")
+```
+
+### Preguntas no significativas + porcentaje subgrupos
+#### Pregunta 1.  ¿Existe un protocolo de tratamiento nutricional específico en tu unidad que incluya NPC?
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 1.  ¿Existe un protocolo de tratamiento nutricional específico en tu unidad que incluya NPC?")
+```
+
+#### Pregunta 2.  ¿Conoces el concepto de NPC y sus indicaciones?
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 2.  ¿Conoces el concepto de NPC y sus indicaciones?")
+```
+
+#### Pregunta 3.  ¿Quién es el principal responsable de prescribir/ indicar la NP en tu unidad? [Respuesta multiopción]
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 3.  ¿Quién es el principal responsable de prescribir/ indicar la NP en tu unidad? [Respuesta multiopción]")
+```
+
+Farmacéutico
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Farmacéutico")
+```
+
+Anestesista
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Anestesista") 
+```
+
+Endocrinólogo
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Endocrinólogo")
+```
+
+Cirujano
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Cirujano")
+```
+
+Medicina interna
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Medicina interna")
+```
+
+Pediatría
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pediatría")
+```
+
+Cardiología
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Cardiología")
+```
+
+Reanimación
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Reanimación")
+```
+
+Nutricionista
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Nutricionista")
+```
+
+#### Pregunta 5. En tu opinión, ¿Qué razones sustentan el inicio de una NPC? [Respuesta multiopción]
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 5. En tu opinión, ¿Qué razones sustentan el inicio de una NPC?\r\n[Respuesta multiopción]")
+```
+
+Intolerancia de NE
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Intolerancia_de_NE")
+```
+
+Riesgo de complicaciones al incrementar el volumen de NE
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Riesgo_complicaciones")
+```
+
+Inestabilidad hemodinámica
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Inestabilidad_hemodinámica")
+```
+
+Contraindicación NE
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Contraindicación_NE")
+```
+
+Hipertensión intraabdominal
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Hipertensión_intraabdominal")
+```
+
+Imposibilidad via enteral
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Imposibilidad_via_enteral")
+```
+
+No alcanzar los requerimientos nutricionales
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"No_alcanzar_requerimientos")
+```
+
+Ninguna
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Ninguna")
+```
+
+#### Pregunta 6. ¿Utilizas procinéticos antes de iniciar la NPC para mejorar la tolerancia a la nutrición enteral?
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 6. ¿Utilizas procinéticos antes de iniciar la NPC para mejorar la tolerancia a la nutrición enteral?")
+```
+
+#### Pregunta 7. En caso de continuar con intolerancia a la nutrición enteral a pesar de los procinéticos, ¿se considera el acceso postpilórico antes de la NPC?
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 7. En caso de continuar con intolerancia a la nutrición enteral a pesar de los procinéticos, ¿se considera el acceso postpilórico antes de la NPC?")
+```
+
+#### Pregunta 8. ¿Cuál es tu principal objetivo al prescribir una NPC en vuestra UCI? [Respuesta multiopción]
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 8. ¿Cuál es tu principal objetivo al prescribir una NPC en vuestra UCI? [Respuesta multiopción]")
+```
+
+Cubrir las necesidades energético-proteicas y evitar la desnutrición
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Cubrir_Necesidad") 
+```
+
+Incrementar el aporte proteico
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Incrementar_Proteico")
+```
+
+Incrementar el aporte calórico
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Incrementar_Calorico")
+```
+
+No utilizo NPC
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"No_Utilizo_NPC")
+```
+
+#### Pregunta 9. ¿Qué tipo de preparados de NPC empleáis con mayor frecuencia? [Respuesta multiopción] :
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 9. ¿Qué tipo de preparados de NPC empleáis con mayor frecuencia? [Respuesta multiopción] :")
+```
+
+Estandarizada
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Estandarizada")
+```
+
+Tricamerales
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Tricamerales")
+```
+
+Individualizadas
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Individualizadas")
+```
+
+#### Pregunta 10. ¿Inicias la NPC cuando no se consiga el 60% de los requerimientos nutricionales al cuarto día de ingreso, o a lo largo de la estancia, durante al menos 2 días consecutivos?
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 10. ¿Inicias la NPC cuando no se consiga el 60% de los requerimientos nutricionales al cuarto día de ingreso, o a lo largo de la estancia, durante al menos 2 días consecutivos?")
+```
+
+#### Pregunta 11.  ¿Cuánto tiempo mantenéis la NPC una vez instaurada?
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 11.  ¿Cuánto tiempo mantenéis la NPC una vez instaurada?")
+```
+
+#### Pregunta 12 Respuestas no significativas
+
+Ajustado por cálculo estimado según peso
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Cálculo_peso")
+```
+
+Fórmulas (p.ej. Harris-Benedict)
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Fórmulas")
+```
+
+Ninguno de los anteriores
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Ninguno")
+```
+
+#### Pregunta 13.  ¿Qué vía de administración empleáis habitualmente/de elección para administrar NPC? [Respuesta multiopción]
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 13.  ¿Qué vía de administración empleáis habitualmente/de elección para administrar NPC? [Respuesta multiopción]" )
+```
+
+Catéter venoso central
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Venoso_central")
+```
+
+Catéter venoso central de inserción periférica
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Venoso_central_periférica")
+```
+
+Vía periférica
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Periférica")
+```
+
+#### Pregunta 14. ¿Qué monitorizas en relación al tratamiento nutricional parenteral? [Respuesta multiopción]
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 14. ¿Qué monitorizas en relación al tratamiento nutricional parenteral? [Respuesta multiopción]")
+```
+
+La glucemia
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Glucemia")
+```
+
+Los requerimientos energéticos/proteicos administrados
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Requerimientos")
+```
+
+Los parámetros analíticos
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Analítico")
+```
+
+Ninguno de los mencionados
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Ninguno")
+```
+
+#### Pregunta 15.  ¿En tus informes de ALTA consta que el paciente ha precisado NPC?
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 15.  ¿En tus informes de ALTA consta que el paciente ha precisado NPC?")
+```
+
+#### ¿Estarías dispuesto a participar en formación y/o participar en estudios relacionados con la NPC o terapia nutricional en el paciente crítico?
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"¿Estarías dispuesto a participar en formación y/o participar en estudios relacionados con la NPC o terapia nutricional en el paciente crítico?")
+```
+
+## Rango camas UCI
+```{r include=FALSE}
+# Función para el análisis
+func_rango <- function(datos, columna) {
+  datos[[columna]] <- factor(datos[[columna]])
+  tabla <- table(datos[[columna]], datos$Rango_camas_UCI)
+  chi <- chisq.test(tabla, simulate.p.value = TRUE, B = 1000000) # Realizar Chi-cuadrado con simulación
+  fisher <- fisher.test(tabla, simulate.p.value = TRUE, B = 1000000) # Realizar Fisher con simulación
+  chi_res <- round(chi$stdres, 2) # Residuos tipificados
+  return(list(
+    chi_test = chi, # Resultado del test chi-cuadrado
+    fisher_test = fisher, # Resultado del test exacto de Fisher
+    chi_res, # Residuos tipificados
+    tabla_porcentaje_subgrupo = round(prop.table(tabla, margin = 2) * 100, 2), # Porcentaje subgrupo
+    tabla_porcentaje_respuesta= round(prop.table(tabla, margin = 1) * 100, 2) # Porcentaje respuesta
+  ))
+}
+```
+
+```{r include=FALSE}
+# Aplicar función a todas las preguntas
+resultados <- lapply(preguntas, function(p) func_rango(datos, p))
+```
+
+```{r echo=FALSE}
+# Crear tabla
+tabla_resumen <- data.frame(
+  Pregunta = preguntas,
+  Chi_p = sapply(resultados, function(x) x$chi_test$p.value),
+  Fisher_p = sapply(resultados, function(x) x$fisher_test$p.value)
+)
+
+tabla_resumen$Significativa <- with(tabla_resumen, 
+  ifelse(Chi_p < 0.05 & Fisher_p < 0.05, "Ambas",
+  ifelse(Chi_p < 0.05, "Chi",
+  ifelse(Fisher_p < 0.05, "Fisher", "No")))
+)
+# Redondear p-valores
+tabla_resumen$Chi_p <- round(tabla_resumen$Chi_p, 4)
+tabla_resumen$Fisher_p <- round(tabla_resumen$Fisher_p, 4)
+
+kable(tabla_resumen)
+```
+
+### Preguntas significativas
+#### Pregunta 4.  ¿Utilizas la NPC cuando no se consigue cubrir requerimientos con NE?
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 4.  ¿Utilizas la NPC cuando no se consigue cubrir requerimientos con NE?")
+```
+
+#### Pregunta 12.  ¿Cómo calculas los requerimientos energéticos? [Respuesta multiopción]
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 12.  ¿Cómo calculas los requerimientos energéticos? [Respuesta multiopción]")
+```
+
+#### Anestesista
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Anestesista")
+```
+
+#### Cubrir Necesidad
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Cubrir_Necesidad")
+```
+
+#### Calorimetría indirecta
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Calorimetría_indirecta")
+```
+
+### Preguntas no significativas + porcentaje subgrupos
+#### Pregunta 1.  ¿Existe un protocolo de tratamiento nutricional específico en tu unidad que incluya NPC?
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 1.  ¿Existe un protocolo de tratamiento nutricional específico en tu unidad que incluya NPC?")
+```
+
+#### Pregunta 2.  ¿Conoces el concepto de NPC y sus indicaciones?
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 2.  ¿Conoces el concepto de NPC y sus indicaciones?")
+```
+
+#### Pregunta 3.  ¿Quién es el principal responsable de prescribir/ indicar la NP en tu unidad? [Respuesta multiopción]
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 3.  ¿Quién es el principal responsable de prescribir/ indicar la NP en tu unidad? [Respuesta multiopción]")
+```
+
+Intensivista
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Intensivista")
+```
+
+Farmacéutico
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Farmacéutico")
+```
+
+Endocrinólogo
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Endocrinólogo")
+```
+
+Cirujano
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Cirujano")
+```
+
+Medicina interna
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Medicina interna")
+```
+
+Pediatría
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pediatría")
+```
+
+Cardiología
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Cardiología")
+```
+
+Reanimación
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Reanimación")
+```
+
+Nutricionista
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Nutricionista")
+```
+
+#### Pregunta 5. En tu opinión, ¿Qué razones sustentan el inicio de una NPC? [Respuesta multiopción]
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 5. En tu opinión, ¿Qué razones sustentan el inicio de una NPC?\r\n[Respuesta multiopción]")
+```
+
+Intolerancia de NE
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Intolerancia_de_NE")
+```
+
+Riesgo de complicaciones al incrementar el volumen de NE
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Riesgo_complicaciones")
+```
+
+Inestabilidad hemodinámica
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Inestabilidad_hemodinámica")
+```
+
+Contraindicación NE
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Contraindicación_NE")
+```
+
+Hipertensión intraabdominal
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Hipertensión_intraabdominal")
+```
+
+Imposibilidad via enteral 
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Imposibilidad_via_enteral")
+```
+
+No alcanzar los requerimientos nutricionales
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"No_alcanzar_requerimientos")
+```
+
+Ninguna
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Ninguna")
+```
+
+#### Pregunta 6. ¿Utilizas procinéticos antes de iniciar la NPC para mejorar la tolerancia a la nutrición enteral?
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 6. ¿Utilizas procinéticos antes de iniciar la NPC para mejorar la tolerancia a la nutrición enteral?")
+```
+
+#### Pregunta 7. En caso de continuar con intolerancia a la nutrición enteral a pesar de los procinéticos, ¿se considera el acceso postpilórico antes de la NPC?
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 7. En caso de continuar con intolerancia a la nutrición enteral a pesar de los procinéticos, ¿se considera el acceso postpilórico antes de la NPC?")
+```
+
+#### Pregunta 8. ¿Cuál es tu principal objetivo al prescribir una NPC en vuestra UCI? [Respuesta multiopción]
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 8. ¿Cuál es tu principal objetivo al prescribir una NPC en vuestra UCI? [Respuesta multiopción]")
+```
+
+Incrementar el aporte proteico
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Incrementar_Proteico")
+```
+
+Incrementar el aporte calórico
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Incrementar_Calorico")
+```
+
+No utilizo NPC
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"No_Utilizo_NPC")
+```
+
+#### Pregunta 9. ¿Qué tipo de preparados de NPC empleáis con mayor frecuencia? [Respuesta multiopción] :
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 9. ¿Qué tipo de preparados de NPC empleáis con mayor frecuencia? [Respuesta multiopción] :")
+```
+
+Estandarizada
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Estandarizada")
+```
+
+Tricamerales
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Tricamerales")
+```
+
+Individualizadas
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Individualizadas")
+```
+
+Ninguna
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Ninguna_preg9")
+```
+
+#### Pregunta 10. ¿Inicias la NPC cuando no se consiga el 60% de los requerimientos nutricionales al cuarto día de ingreso, o a lo largo de la estancia, durante al menos 2 días consecutivos?  
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 10. ¿Inicias la NPC cuando no se consiga el 60% de los requerimientos nutricionales al cuarto día de ingreso, o a lo largo de la estancia, durante al menos 2 días consecutivos?")
+```
+
+#### Pregunta 11.  ¿Cuánto tiempo mantenéis la NPC una vez instaurada?
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 11.  ¿Cuánto tiempo mantenéis la NPC una vez instaurada?")
+```
+
+#### Pregunta 12 Respuestas no significativas
+
+Ajustado por cálculo estimado según peso
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Cálculo_peso")
+```
+
+Fórmulas (p.ej. Harris-Benedict)
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Fórmulas")
+```
+
+Ninguno de los anteriores
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Ninguno")
+```
+
+#### Pregunta 13.  ¿Qué vía de administración empleáis habitualmente/de elección para administrar NPC? [Respuesta multiopción]
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 13.  ¿Qué vía de administración empleáis habitualmente/de elección para administrar NPC? [Respuesta multiopción]" )
+```
+
+Catéter venoso central
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Venoso_central")
+```
+
+Catéter venoso central de inserción periférica
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Venoso_central_periférica")
+```
+
+Vía periférica
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Periférica")
+```
+
+#### Pregunta 14. ¿Qué monitorizas en relación al tratamiento nutricional parenteral? [Respuesta multiopción]
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 14. ¿Qué monitorizas en relación al tratamiento nutricional parenteral? [Respuesta multiopción]")
+```
+
+La glucemia
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Glucemia")
+```
+
+Los requerimientos energéticos/proteicos administrados
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Requerimientos")
+```
+
+Los parámetros analíticos
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Analítico")
+```
+
+Ninguno de los mencionados
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Ninguno")
+```
+
+#### Pregunta 15.  ¿En tus informes de ALTA consta que el paciente ha precisado NPC?
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 15.  ¿En tus informes de ALTA consta que el paciente ha precisado NPC?")
+```
+
+#### Pregunta 16.  ¿En tu centro se utiliza la NPC en planta tras el alta de UCI?
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 16.  ¿En tu centro se utiliza la NPC en planta tras el alta de UCI?")
+```
+
+#### Pregunta 17. En cuanto a la formación continuada/actualización periódica en nutrición hospitalaria, consideras que respecto a la NPC
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"Pregunta 17. En cuanto a la formación continuada/actualización periódica en nutrición hospitalaria, consideras que respecto a la NPC" )
+```
+
+#### ¿Estarías dispuesto a participar en formación y/o participar en estudios relacionados con la NPC o terapia nutricional en el paciente crítico?
+```{r echo=FALSE}
+# Aplicar función
+func_rango(datos,"¿Estarías dispuesto a participar en formación y/o participar en estudios relacionados con la NPC o terapia nutricional en el paciente crítico?")
+```
+
+## Pregunta 1 - Existencia de protocolo
+```{r include=FALSE}
+# Crear una nueva variable llamada "Protocolo"
+datos <- datos %>%
+  mutate(Protocolo = case_when(
+    str_detect(`Pregunta 1.  ¿Existe un protocolo de tratamiento nutricional específico en tu unidad que incluya NPC?`, "^Sí$") ~ "Sí",
+    TRUE ~ "No"
+  ))
+```
+
+```{r include=FALSE}
+# Función para el análisis
+func_preg1 <- function(datos, columna) {
+  datos[[columna]] <- factor(datos[[columna]])
+  tabla <- table(datos[[columna]], datos$Protocolo)
+  chi <- chisq.test(tabla, simulate.p.value = TRUE, B = 1000000) # Realizar Chi-cuadrado con simulación
+  fisher <- fisher.test(tabla, simulate.p.value = TRUE, B = 1000000) # Realizar Fisher con simulación
+  chi_res <- round(chi$stdres, 2) # Residuos tipificados
+  return(list(
+    chi_test = chi, # Resultado del test chi-cuadrado
+    fisher_test = fisher, # Resultado del test exacto de Fisher
+    chi_res, # Residuos tipificados
+    tabla_porcentaje_subgrupo = round(prop.table(tabla, margin = 2) * 100, 2), # Porcentaje subgrupo
+    tabla_porcentaje_respuesta= round(prop.table(tabla, margin = 1) * 100, 2) # Porcentaje respuesta
+  ))
+}
+```
+
+```{r echo=FALSE}
+# Preguntas donde aplicar la función
+preguntas <- c(
+  "Pregunta 2.  ¿Conoces el concepto de NPC y sus indicaciones?",
+  "Pregunta 3.  ¿Quién es el principal responsable de prescribir/ indicar la NP en tu unidad? [Respuesta multiopción]",
+  "Pregunta 4.  ¿Utilizas la NPC cuando no se consigue cubrir requerimientos con NE?",
+  "Pregunta 5. En tu opinión, ¿Qué razones sustentan el inicio de una NPC?\r\n[Respuesta multiopción]",
+  "Pregunta 6. ¿Utilizas procinéticos antes de iniciar la NPC para mejorar la tolerancia a la nutrición enteral?",
+  "Pregunta 7. En caso de continuar con intolerancia a la nutrición enteral a pesar de los procinéticos, ¿se considera el acceso postpilórico antes de la NPC?",
+  "Pregunta 8. ¿Cuál es tu principal objetivo al prescribir una NPC en vuestra UCI? [Respuesta multiopción]",
+  "Pregunta 9. ¿Qué tipo de preparados de NPC empleáis con mayor frecuencia? [Respuesta multiopción] :",
+  "Pregunta 10. ¿Inicias la NPC cuando no se consiga el 60% de los requerimientos nutricionales al cuarto día de ingreso, o a lo largo de la estancia, durante al menos 2 días consecutivos?",
+  "Pregunta 11.  ¿Cuánto tiempo mantenéis la NPC una vez instaurada?",
+  "Pregunta 12.  ¿Cómo calculas los requerimientos energéticos? [Respuesta multiopción]",
+  "Pregunta 13.  ¿Qué vía de administración empleáis habitualmente/de elección para administrar NPC? [Respuesta multiopción]",
+  "Pregunta 14. ¿Qué monitorizas en relación al tratamiento nutricional parenteral? [Respuesta multiopción]",
+  "Pregunta 15.  ¿En tus informes de ALTA consta que el paciente ha precisado NPC?",
+  "Pregunta 16.  ¿En tu centro se utiliza la NPC en planta tras el alta de UCI?",
+  "Pregunta 17. En cuanto a la formación continuada/actualización periódica en nutrición hospitalaria, consideras que respecto a la NPC",
+  "¿Estarías dispuesto a participar en formación y/o participar en estudios relacionados con la NPC o terapia nutricional en el paciente crítico?","Intensivista","Farmacéutico","Anestesista","Endocrinólogo","Cirujano","Medicina interna","Pediatría","Cardiología","Reanimación","Nutricionista","Intolerancia_de_NE","Riesgo_complicaciones","Inestabilidad_hemodinámica","Contraindicación_NE","Hipertensión_intraabdominal","Imposibilidad_via_enteral","Ninguna","No_alcanzar_requerimientos","Cubrir_Necesidad","Incrementar_Proteico","Incrementar_Calorico","No_Utilizo_NPC","Estandarizada","Tricamerales","Individualizadas","Ninguna_preg9","Cálculo_peso","Fórmulas","Calorimetría_indirecta","Ninguno","Venoso_central","Venoso_central_periférica","Periférica","Glucemia","Requerimientos","Analítico","Ninguno"
+)
+# Aplicar función a todas las preguntas
+resultados <- lapply(preguntas, function(p) func_preg1(datos, p))
+```
+
+```{r echo=FALSE}
+# Crear tabla
+tabla_resumen <- data.frame(
+  Pregunta = preguntas,
+  Chi_p = sapply(resultados, function(x) x$chi_test$p.value),
+  Fisher_p = sapply(resultados, function(x) x$fisher_test$p.value)
+)
+
+tabla_resumen$Significativa <- with(tabla_resumen, 
+  ifelse(Chi_p < 0.05 & Fisher_p < 0.05, "Ambas",
+  ifelse(Chi_p < 0.05, "Chi",
+  ifelse(Fisher_p < 0.05, "Fisher", "No")))
+)
+# Redondear p-valores
+tabla_resumen$Chi_p <- round(tabla_resumen$Chi_p, 4)
+tabla_resumen$Fisher_p <- round(tabla_resumen$Fisher_p, 4)
+
+kable(tabla_resumen)
+```
+
+### Preguntas significativas + porcentaje subgrupos
+#### Pregunta 10. ¿Inicias la NPC cuando no se consiga el 60% de los requerimientos nutricionales al cuarto día de ingreso, o a lo largo de la estancia, durante al menos 2 días consecutivos?
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Pregunta 10. ¿Inicias la NPC cuando no se consiga el 60% de los requerimientos nutricionales al cuarto día de ingreso, o a lo largo de la estancia, durante al menos 2 días consecutivos?")
+```
+
+#### Pregunta 12.  ¿Cómo calculas los requerimientos energéticos? [Respuesta multiopción]
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Pregunta 12.  ¿Cómo calculas los requerimientos energéticos? [Respuesta multiopción]")
+```
+
+#### Pregunta 15.  ¿En tus informes de ALTA consta que el paciente ha precisado NPC?
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Pregunta 15.  ¿En tus informes de ALTA consta que el paciente ha precisado NPC?")
+```
+
+#### Farmacéutico en Pregunta 3
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Farmacéutico")
+```
+
+#### Individualizadas en Pregunta 9
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Individualizadas")
+```
+
+#### Calorimetría indirecta en Pregunta 12
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Calorimetría_indirecta")
+```
+
+### Preguntas no significativas + porcentaje subgrupos
+#### Pregunta 2.  ¿Conoces el concepto de NPC y sus indicaciones?
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Pregunta 2.  ¿Conoces el concepto de NPC y sus indicaciones?")
+```
+
+#### Pregunta 3.  ¿Quién es el principal responsable de prescribir/ indicar la NP en tu unidad? [Respuesta multiopción]
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Pregunta 3.  ¿Quién es el principal responsable de prescribir/ indicar la NP en tu unidad? [Respuesta multiopción]")
+```
+
+Intensivista
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Intensivista")
+```
+
+Anestesista
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Anestesista")
+```
+
+Endocrinólogo
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Endocrinólogo")
+```
+
+Cirujano
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Cirujano")
+```
+
+Medicina interna
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Medicina interna")
+```
+
+Pediatría
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Pediatría")
+```
+
+Cardiología
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Cardiología")
+```
+
+Reanimación
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Reanimación")
+```
+
+Nutricionista
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Nutricionista")
+```
+
+#### Pregunta 4.  ¿Utilizas la NPC cuando no se consigue cubrir requerimientos con NE?
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Pregunta 4.  ¿Utilizas la NPC cuando no se consigue cubrir requerimientos con NE?")
+```
+
+#### Pregunta 5. En tu opinión, ¿Qué razones sustentan el inicio de una NPC? [Respuesta multiopción]
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Pregunta 5. En tu opinión, ¿Qué razones sustentan el inicio de una NPC?\r\n[Respuesta multiopción]")
+```
+
+Intolerancia de NE
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Intolerancia_de_NE")
+```
+
+Riesgo de complicaciones
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Riesgo_complicaciones")
+```
+
+Inestabilidad hemodinámica
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Inestabilidad_hemodinámica")
+```
+
+Contraindicación de NE
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Contraindicación_NE")
+```
+
+Hipertensión intraabdominal
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Hipertensión_intraabdominal")
+```
+
+Imposibilidad de via enteral
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Imposibilidad_via_enteral")
+```
+
+No alcanzar los requerimientos
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"No_alcanzar_requerimientos")
+```
+
+Ninguna
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Ninguna")
+```
+
+#### Pregunta 6. ¿Utilizas procinéticos antes de iniciar la NPC para mejorar la tolerancia a la nutrición enteral?
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Pregunta 6. ¿Utilizas procinéticos antes de iniciar la NPC para mejorar la tolerancia a la nutrición enteral?")
+```
+
+#### Pregunta 7. En caso de continuar con intolerancia a la nutrición enteral a pesar de los procinéticos, ¿se considera el acceso postpilórico antes de la NPC?
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Pregunta 7. En caso de continuar con intolerancia a la nutrición enteral a pesar de los procinéticos, ¿se considera el acceso postpilórico antes de la NPC?")
+```
+
+#### Pregunta 8. ¿Cuál es tu principal objetivo al prescribir una NPC en vuestra UCI? [Respuesta multiopción]
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Pregunta 8. ¿Cuál es tu principal objetivo al prescribir una NPC en vuestra UCI? [Respuesta multiopción]")
+```
+
+Cubrir las necesidades energético-proteicas y evitar la desnutrición
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Cubrir_Necesidad")
+```
+
+Incrementar el aporte proteico
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Incrementar_Proteico")
+```
+
+Incrementar el aporte calórico
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Incrementar_Calorico")
+```
+
+No utilizo NPC
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"No_Utilizo_NPC")
+```
+
+#### Pregunta 9. ¿Qué tipo de preparados de NPC empleáis con mayor frecuencia? [Respuesta multiopción] :
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Pregunta 9. ¿Qué tipo de preparados de NPC empleáis con mayor frecuencia? [Respuesta multiopción] :")
+```
+
+Estandarizada
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Estandarizada")
+```
+
+Tricamerales
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Tricamerales")
+```
+
+Ninguna
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Ninguna_preg9")
+```
+
+#### Pregunta 11.  ¿Cuánto tiempo mantenéis la NPC una vez instaurada?
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Pregunta 11.  ¿Cuánto tiempo mantenéis la NPC una vez instaurada?")
+```
+
+#### Pregunta 12 respuestas no significativas
+
+ Ajustado por cálculo estimado según peso
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Cálculo_peso")
+```
+
+Fórmulas (p.ej. Harris-Benedict)
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Fórmulas")
+```
+
+Ninguno de las anteriores
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Ninguno")
+```
+
+#### Pregunta 13.  ¿Qué vía de administración empleáis habitualmente/de elección para administrar NPC? [Respuesta multiopción]
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Pregunta 13.  ¿Qué vía de administración empleáis habitualmente/de elección para administrar NPC? [Respuesta multiopción]" )
+```
+
+Catéter venoso central
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Venoso_central")
+```
+
+Catéter venoso central de inserción periférica
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Venoso_central_periférica")
+```
+
+Vía periférica
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Periférica")
+```
+
+#### Pregunta 14. ¿Qué monitorizas en relación al tratamiento nutricional parenteral? [Respuesta multiopción]
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Pregunta 14. ¿Qué monitorizas en relación al tratamiento nutricional parenteral? [Respuesta multiopción]")
+```
+
+La glucemia
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Glucemia")
+```
+
+Los requerimientos energéticos/proteicos administrados
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Requerimientos")
+```
+
+Los parámetros analíticos
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Analítico")
+```
+
+Ninguno de los mencionados
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Ninguno")
+```
+
+#### Pregunta 16.  ¿En tu centro se utiliza la NPC en planta tras el alta de UCI?
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Pregunta 16.  ¿En tu centro se utiliza la NPC en planta tras el alta de UCI?")
+```
+
+#### Pregunta 17. En cuanto a la formación continuada/actualización periódica en nutrición hospitalaria, consideras que respecto a la NPC
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"Pregunta 17. En cuanto a la formación continuada/actualización periódica en nutrición hospitalaria, consideras que respecto a la NPC" )
+```
+
+#### ¿Estarías dispuesto a participar en formación y/o participar en estudios relacionados con la NPC o terapia nutricional en el paciente crítico?
+```{r echo=FALSE}
+# Aplicar función
+func_preg1(datos,"¿Estarías dispuesto a participar en formación y/o participar en estudios relacionados con la NPC o terapia nutricional en el paciente crítico?")
+```
+
+## Pregunta 17 - Formación
+```{r include=FALSE}
+# Crear una nueva variable llamada "Formacion"
+datos <- datos %>%
+  mutate(
+    Formacion = case_when(
+      `Pregunta 17. En cuanto a la formación continuada/actualización periódica en nutrición hospitalaria, consideras que respecto a la NPC` == 
+        "Considero que estoy actualizado." ~ "Actualizado",
+      `Pregunta 17. En cuanto a la formación continuada/actualización periódica en nutrición hospitalaria, consideras que respecto a la NPC` %in% 
+        c("Hace tiempo que no reviso este aspecto.",
+          "No lo considero un aspecto prioritario en mi formación continuada") ~ "No actualizado/No prioritario",
+      TRUE ~ NA_character_
+    )
+  )
+```
+
+```{r include=FALSE}
+# Función para el análisis
+func_preg17 <- function(datos, columna) {
+  datos[[columna]] <- factor(datos[[columna]])
+  tabla <- table(datos[[columna]], datos$Formacion)
+  chi <- chisq.test(tabla, simulate.p.value = TRUE, B = 1000000) # Realizar Chi-cuadrado con simulación
+  fisher <- fisher.test(tabla, simulate.p.value = TRUE, B = 1000000) # Realizar Fisher con simulación
+  chi_res <- round(chi$stdres, 2) # Residuos tipificados
+  return(list(
+    chi_test = chi, # Resultado del test chi-cuadrado
+    fisher_test = fisher, # Resultado del test exacto de Fisher
+    chi_res, # Residuos tipificados
+    tabla_porcentaje_subgrupo = round(prop.table(tabla, margin = 2) * 100, 2), # Porcentaje subgrupo
+    tabla_porcentaje_respuesta= round(prop.table(tabla, margin = 1) * 100, 2) # Porcentaje respuesta
+  ))
+}
+```
+
+```{r include=FALSE}
+# Preguntas donde aplicar la función
+preguntas <- c(
+  "Pregunta 1.  ¿Existe un protocolo de tratamiento nutricional específico en tu unidad que incluya NPC?",
+  "Pregunta 2.  ¿Conoces el concepto de NPC y sus indicaciones?",
+  "Pregunta 3.  ¿Quién es el principal responsable de prescribir/ indicar la NP en tu unidad? [Respuesta multiopción]",
+  "Pregunta 4.  ¿Utilizas la NPC cuando no se consigue cubrir requerimientos con NE?",
+  "Pregunta 5. En tu opinión, ¿Qué razones sustentan el inicio de una NPC?\r\n[Respuesta multiopción]",
+  "Pregunta 6. ¿Utilizas procinéticos antes de iniciar la NPC para mejorar la tolerancia a la nutrición enteral?",
+  "Pregunta 7. En caso de continuar con intolerancia a la nutrición enteral a pesar de los procinéticos, ¿se considera el acceso postpilórico antes de la NPC?",
+  "Pregunta 8. ¿Cuál es tu principal objetivo al prescribir una NPC en vuestra UCI? [Respuesta multiopción]",
+  "Pregunta 9. ¿Qué tipo de preparados de NPC empleáis con mayor frecuencia? [Respuesta multiopción] :",
+  "Pregunta 10. ¿Inicias la NPC cuando no se consiga el 60% de los requerimientos nutricionales al cuarto día de ingreso, o a lo largo de la estancia, durante al menos 2 días consecutivos?",
+  "Pregunta 11.  ¿Cuánto tiempo mantenéis la NPC una vez instaurada?",
+  "Pregunta 12.  ¿Cómo calculas los requerimientos energéticos? [Respuesta multiopción]",
+  "Pregunta 13.  ¿Qué vía de administración empleáis habitualmente/de elección para administrar NPC? [Respuesta multiopción]",
+  "Pregunta 14. ¿Qué monitorizas en relación al tratamiento nutricional parenteral? [Respuesta multiopción]",
+  "Pregunta 15.  ¿En tus informes de ALTA consta que el paciente ha precisado NPC?",
+  "Pregunta 16.  ¿En tu centro se utiliza la NPC en planta tras el alta de UCI?",
+  "¿Estarías dispuesto a participar en formación y/o participar en estudios relacionados con la NPC o terapia nutricional en el paciente crítico?","Intensivista","Farmacéutico","Anestesista","Endocrinólogo","Cirujano","Medicina interna","Pediatría","Cardiología","Reanimación","Nutricionista","Intolerancia_de_NE","Riesgo_complicaciones","Inestabilidad_hemodinámica","Contraindicación_NE","Hipertensión_intraabdominal","Imposibilidad_via_enteral","Ninguna","No_alcanzar_requerimientos","Cubrir_Necesidad","Incrementar_Proteico","Incrementar_Calorico","No_Utilizo_NPC","Estandarizada","Tricamerales","Individualizadas","Ninguna_preg9","Cálculo_peso","Fórmulas","Calorimetría_indirecta","Ninguno","Venoso_central","Venoso_central_periférica","Periférica","Glucemia","Requerimientos","Analítico","Ninguno"
+)
+# Aplicar función a todas las preguntas
+resultados <- lapply(preguntas, function(p) func_preg17(datos, p))
+```
+
+```{r echo=FALSE}
+# Crear tabla
+tabla_resumen <- data.frame(
+  Pregunta = preguntas,
+  Chi_p = sapply(resultados, function(x) x$chi_test$p.value),
+  Fisher_p = sapply(resultados, function(x) x$fisher_test$p.value)
+)
+
+tabla_resumen$Significativa <- with(tabla_resumen, 
+  ifelse(Chi_p < 0.05 & Fisher_p < 0.05, "Ambas",
+  ifelse(Chi_p < 0.05, "Chi",
+  ifelse(Fisher_p < 0.05, "Fisher", "No")))
+)
+# Redondear p-valores
+tabla_resumen$Chi_p <- round(tabla_resumen$Chi_p, 4)
+tabla_resumen$Fisher_p <- round(tabla_resumen$Fisher_p, 4)
+
+kable(tabla_resumen)
+```
+
+### Preguntas significativas
+#### Pregunta 2.  ¿Conoces el concepto de NPC y sus indicaciones?
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Pregunta 2.  ¿Conoces el concepto de NPC y sus indicaciones?")
+```
+
+```{r include=FALSE}
+datos <- datos %>%
+  mutate(
+    Preg2_simpli = case_when(
+      `Pregunta 2.  ¿Conoces el concepto de NPC y sus indicaciones?` == "Sí" ~ "Sí",
+      TRUE ~ "No o no con claridad"
+    )
+  )
+```
+```{r include=FALSE}
+# Aplicar función
+func_preg17(datos, "Preg2_simpli")
+```
+
+#### Pregunta 4.  ¿Utilizas la NPC cuando no se consigue cubrir requerimientos con NE?
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Pregunta 4.  ¿Utilizas la NPC cuando no se consigue cubrir requerimientos con NE?")
+```
+
+#### Pregunta 5. En tu opinión, ¿Qué razones sustentan el inicio de una NPC? [Respuesta multiopción]
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Pregunta 5. En tu opinión, ¿Qué razones sustentan el inicio de una NPC?\r\n[Respuesta multiopción]")
+```
+
+#### Pregunta 6. ¿Utilizas procinéticos antes de iniciar la NPC para mejorar la tolerancia a la nutrición enteral?
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Pregunta 6. ¿Utilizas procinéticos antes de iniciar la NPC para mejorar la tolerancia a la nutrición enteral?")
+```
+
+#### Pregunta 10. ¿Inicias la NPC cuando no se consiga el 60% de los requerimientos nutricionales al cuarto día de ingreso, o a lo largo de la estancia, durante al menos 2 días consecutivos?
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Pregunta 10. ¿Inicias la NPC cuando no se consiga el 60% de los requerimientos nutricionales al cuarto día de ingreso, o a lo largo de la estancia, durante al menos 2 días consecutivos?")
+```
+
+#### Pregunta 12.  ¿Cómo calculas los requerimientos energéticos? [Respuesta multiopción]
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Pregunta 12.  ¿Cómo calculas los requerimientos energéticos? [Respuesta multiopción]")
+```
+
+#### Pregunta 14. ¿Qué monitorizas en relación al tratamiento nutricional parenteral? [Respuesta multiopción]
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Pregunta 14. ¿Qué monitorizas en relación al tratamiento nutricional parenteral? [Respuesta multiopción]")
+```
+
+#### Tricamerales
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Tricamerales")
+```
+
+#### Cálculo peso
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Cálculo_peso")
+```
+
+#### Glucemia
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Glucemia")
+```
+
+#### Requerimientos
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Requerimientos")
+```
+
+#### Analítica
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Analítico")
+```
+
+### Preguntas no significativas + porcentaje subgrupos
+#### Pregunta 1.  ¿Existe un protocolo de tratamiento nutricional específico en tu unidad que incluya NPC?
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Pregunta 1.  ¿Existe un protocolo de tratamiento nutricional específico en tu unidad que incluya NPC?")
+```
+
+#### Pregunta 3.  ¿Quién es el principal responsable de prescribir/ indicar la NP en tu unidad? [Respuesta multiopción]
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Pregunta 3.  ¿Quién es el principal responsable de prescribir/ indicar la NP en tu unidad? [Respuesta multiopción]")
+```
+
+Intensivista
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Intensivista")
+```
+
+Farmacéutico
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Farmacéutico")
+```
+
+Anestesista
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Anestesista")
+```
+
+Endocrinólogo
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Endocrinólogo")
+```
+
+Cirujano
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Cirujano")
+```
+
+Medicina interna
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Medicina interna")
+```
+
+Pediatría
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Pediatría")
+```
+
+Cardiología
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Cardiología")
+```
+
+Reanimación
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Reanimación")
+```
+
+Nutricionista
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Nutricionista")
+```
+
+#### Pregunta 5 Respuestas no significativas
+
+Intolerancia de NE
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Intolerancia_de_NE")
+```
+
+Riesgo de complicaciones al incrementar el volumen de NE
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Riesgo_complicaciones")
+```
+
+Inestabilidad hemodinámica
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Inestabilidad_hemodinámica")
+```
+
+Contraindicación de NE
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Contraindicación_NE")
+```
+
+Hipertensión intraabdominal
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Hipertensión_intraabdominal")
+```
+
+Imposibilidad de via enteral
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Imposibilidad_via_enteral")
+```
+
+No alcanzar los requerimientos nutricionales
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"No_alcanzar_requerimientos")
+```
+
+Ninguna
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Ninguna")
+```
+
+#### Pregunta 7. En caso de continuar con intolerancia a la nutrición enteral a pesar de los procinéticos, ¿se considera el acceso postpilórico antes de la NPC?
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Pregunta 7. En caso de continuar con intolerancia a la nutrición enteral a pesar de los procinéticos, ¿se considera el acceso postpilórico antes de la NPC?")
+```
+
+#### Pregunta 8. ¿Cuál es tu principal objetivo al prescribir una NPC en vuestra UCI? [Respuesta multiopción]
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Pregunta 8. ¿Cuál es tu principal objetivo al prescribir una NPC en vuestra UCI? [Respuesta multiopción]")
+```
+
+Cubrir las necesidades energético-proteicas y evitar la desnutrición
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Cubrir_Necesidad")
+```
+
+Incrementar el aporte proteico
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Incrementar_Proteico")
+```
+
+Incrementar el aporte calórico
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Incrementar_Calorico")
+```
+
+No utilizo NPC 
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"No_Utilizo_NPC")
+```
+
+#### Pregunta 9. ¿Qué tipo de preparados de NPC empleáis con mayor frecuencia? [Respuesta multiopción] :
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Pregunta 9. ¿Qué tipo de preparados de NPC empleáis con mayor frecuencia? [Respuesta multiopción] :")
+```
+
+Estandarizada
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Estandarizada")
+```
+
+Individualizadas
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Individualizadas")
+```
+
+Ninguna
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Ninguna_preg9")
+```
+
+#### Pregunta 11.  ¿Cuánto tiempo mantenéis la NPC una vez instaurada?
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Pregunta 11.  ¿Cuánto tiempo mantenéis la NPC una vez instaurada?")
+```
+
+#### Pregunta 12 Respuestas no significativas
+
+Fórmulas (p.ej. Harris-Benedict)
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Fórmulas")
+```
+
+Calorimetría indirecta
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Calorimetría_indirecta")
+```
+
+Ninguno de los anteriores
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Ninguno")
+```
+
+#### Pregunta 13.  ¿Qué vía de administración empleáis habitualmente/de elección para administrar NPC? [Respuesta multiopción]
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Pregunta 13.  ¿Qué vía de administración empleáis habitualmente/de elección para administrar NPC? [Respuesta multiopción]" )
+```
+
+Catéter venoso central
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Venoso_central")
+```
+
+Catéter venoso central de inserción periférica
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Venoso_central_periférica")
+```
+
+Vía periférica
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Periférica")
+```
+
+#### Pregunta 14 Respuesta no significativa
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Ninguno")
+```
+
+#### Pregunta 15.  ¿En tus informes de ALTA consta que el paciente ha precisado NPC?
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Pregunta 15.  ¿En tus informes de ALTA consta que el paciente ha precisado NPC?")
+```
+
+#### Pregunta 16.  ¿En tu centro se utiliza la NPC en planta tras el alta de UCI?
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"Pregunta 16.  ¿En tu centro se utiliza la NPC en planta tras el alta de UCI?")
+```
+
+#### ¿Estarías dispuesto a participar en formación y/o participar en estudios relacionados con la NPC o terapia nutricional en el paciente crítico?
+```{r echo=FALSE}
+# Aplicar función
+func_preg17(datos,"¿Estarías dispuesto a participar en formación y/o participar en estudios relacionados con la NPC o terapia nutricional en el paciente crítico?")
+```
